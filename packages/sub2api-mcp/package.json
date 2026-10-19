@@ -33,7 +33,8 @@
   "files": [
     "src",
     "README.md",
-    "mcp.config.example.json"
+    "mcp.config.example.json",
+    "scripts"
   ],
   "keywords": [
     "mcp",

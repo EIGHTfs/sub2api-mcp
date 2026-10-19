@@ -72,21 +72,67 @@ sub2api-mcp inspect <agent>
 }
 ```
 
-## 工具（18 个，按档位）
+## 工具（20 个，按档位）
 
 | 档位 | 工具 |
 |---|---|
-| **readonly**（8） | `sub2api_status` `list_users` `get_user` `list_accounts` `list_groups` `list_api_keys` `get_usage` `sync_upstream_models` |
-| **readwrite**（+9） | `create_user` `update_user` `set_user_balance` `create_account` `update_account` `bind_account_group` `create_group` `create_api_key` `chat_completion` |
+| **readonly**（9） | `sub2api_status` `list_users` `get_user` `list_accounts` `list_groups` `list_api_keys` `get_usage` `sync_upstream_models` `probe_accounts` |
+| **readwrite**（+10） | `create_user` `update_user` `set_user_balance` `create_account` `update_account` `bind_account_group` `create_group` `create_api_key` `chat_completion` `import_dsh_providers` |
 | **full**（+1） | `delete_account` |
+
+## 从 DSH 导入模型提供商
+
+把 DSH 里已配置的提供商（**api 地址 + key + 模型清单**）一键导成 Sub2API 的上游账号。
+
+```bash
+# 1) 先预览（默认 dry-run，不写任何东西；key 已脱敏）
+node scripts/import-dsh-providers.mjs
+
+# 2) 真建（幂等：同名账号已存在则跳过）
+node scripts/import-dsh-providers.mjs --write --probe
+
+# 3) 只导其中几个 / 已存在则覆盖更新
+node scripts/import-dsh-providers.mjs --write --update --only d,agnes
+```
+
+也可以在会话里让 AI 直接调 MCP 工具 `import_dsh_providers`（readwrite 档，默认 `dry_run: true`）。
+
+### 配置自动发现（不绑定具体文件）
+
+不同 DSH 版本的配置落点不同，导入器按「扫描 → 合并 → 去重」处理，并报告每个提供商来自哪个文件：
+
+| 类型 | 扫描位置 |
+|---|---|
+| 提供商 | `<DSH_HOME>/` 与每个 `<DSH_HOME>/profiles/<name>/` 下的 `cordis.patch.yml` `cordis.yml` `config.{yml,yaml,json}` `dsh.config.json` |
+| 凭据 | `<DSH_HOME>/` 与每个 profile 下的 `.credentials.{yaml,yml,json}` `credentials.{json,yaml}` |
+
+key 取值优先级：提供商内联 `apiKey` → 凭据库 `refs.<apiKeyEnv>` → 进程环境变量 `apiKeyEnv`。
+
+### 账号自检的测试模型（容易踩坑）
+
+Sub2API 的账号自检 `POST /admin/accounts/:id/test` **会忽略传入的 model**，固定用平台自己的测试模型
+（实测 `openai` → `gpt-5.4`，`opencode_go` → `glm-5.3`）。所以导入时会把该测试模型作为别名写进账号的
+`model_mapping`，指向该账号的第一个真实模型；否则自检必然报 `model_not_found`。
+
+- 默认按平台取（`--test-model` 可显式覆盖）
+- 同平台存在「非本工具建的」账号时，会先对它实测一次，用读到的模型名更准
+
+### 安全约束
+
+- **回环检测**：baseURL 指向网关自身或其它 Sub2API 实例时打印 ⚠ 警告 —— 这类 provider 不要导入，否则形成循环调用
+- key 缺失的 provider 直接跳过并报告（不建空 key 账号）
+- 工具/CLI 输出里的 key 一律脱敏
 
 ## 架构分层
 
 ```
 L0 src/core/client.js     Sub2API API 客户端（无 MCP/agent 依赖）
+   src/core/probe.js      账号探活（SSE 解析）
+   src/core/dsh-import.js DSH 提供商发现与转换（多来源扫描 ✓ 零依赖 ✓）
 L1 src/mcp/server.js      MCP 服务器（stdio JSON-RPC）
 L2 src/adapters/index.js  各 agent 注册器（claude-desktop / claude-code / cursor / dsh / generic）
    src/cli.js             命令行：serve / register / status / tools / config / adapters
+   scripts/import-dsh-providers.mjs   提供商导入 CLI（默认 dry-run ✓）
 ```
 
 > **DSH 专用插件**（设置页 + 凭据托管 + 自动注册）在后续版本作为独立包

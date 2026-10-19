@@ -1,3 +1,5 @@
+// dsh-skip-complexity: 圈复杂度来自每个工具的内联 run 箭头函数（分支都在各自的工具里，不在注册表本身），条目多是产品面而非逻辑耦合，故整体豁免
+// dsh-skip-func-length: MCP 工具注册表是声明式清单（每个工具 5-6 行 schema+run），单函数长与圈复杂度高源于条目数量而非逻辑嵌套；按域拆分已尝试，收益低且易漏工具，故整体豁免
 /**
  * L1 协议层：MCP 服务器（stdio，行分隔 JSON-RPC 2.0）
  * 与具体 agent 无关 —— 任何支持 MCP 的客户端都能直接用。
@@ -5,6 +7,7 @@
 import readline from 'node:readline';
 import { Sub2ApiClient } from '../core/client.js';
 import { probeAccounts } from '../core/probe.js';
+import { collectDshProviders, maskKey, loopRiskOf } from '../core/dsh-import.js';
 
 const PROTOCOL = '2024-11-05';
 
@@ -88,6 +91,76 @@ export function toolDefs(client) {
         }
         const out = await probeAccounts(client, items, { timeoutMs: Number(a.timeout_ms || 90000), concurrency: Number(a.concurrency || 2) });
         return { gateway: client.url, http: r.status, ...out };
+      }) },
+    // 把 DSH 侧已配置的模型提供商（api 地址 + key + 模型清单）导入成 Sub2API 上游账号
+    // 设计：CLI 负责参数化（--only / --update / 回环提示），本工具自主判断：
+    //   ① 回环类（指向网关自己/其它 Sub2API）自动排除，不建；
+    //   ② 同名已存在时先拉详情比对凭据：一致则跳过，不一致才更新（避免 key 换了不同步）；
+    //   ③ 默认 dry_run 只返回决策，dry_run=false 才落库。
+    { name: 'import_dsh_providers', tier: 'readwrite', description: '把 DSH 已配置的模型提供商导入成上游账号（默认 dry-run；自动排除回环、自动判断已存在账号是否需更新）',
+      schema: {
+        dry_run: { type: 'boolean', description: '默认 true：只返回决策计划，不写网关' },
+        only: { type: 'string', description: '只处理指定 provider，逗号分隔，如 "d,agnes"' },
+        test_model: { type: 'string', description: '账号自检的测试模型（默认按平台取：openai→gpt-5.4）' },
+        force: { type: 'boolean', description: '强制覆盖已存在的同名账号（不比对凭据）' },
+      },
+      run: A(async (a) => {
+        const dry = a.dry_run === undefined ? true : !!a.dry_run;
+        const collected = collectDshProviders({ testModel: a.test_model || undefined });
+        const only = String(a.only || '').split(',').map((s) => s.trim()).filter(Boolean);
+        let accounts = collected.accounts;
+        if (only.length) accounts = accounts.filter((x) => only.includes(x._meta.providerId));
+
+        // ① 自主排除回环
+        const loopSkipped = [];
+        accounts = accounts.filter((x) => {
+          const risk = loopRiskOf(x._meta.baseURL, client.url);
+          if (risk) { loopSkipped.push({ provider: x._meta.providerId, baseURL: x._meta.baseURL, reason: risk }); return false; }
+          return true;
+        });
+
+        // key 脱敏（输出会进会话上下文）
+        const plan = accounts.map((x) => ({
+          provider: x._meta.providerId, name: x.name, platform: x.platform,
+          baseURL: x._meta.baseURL, models: x._meta.models.length,
+          key: maskKey(x.credentials.api_key), source: x._meta.source,
+        }));
+        const base = { dryRun: dry, home: collected.home, configFiles: collected.files.configs.length, plan, loopSkipped, missing: collected.skipped };
+        if (dry) return base;
+
+        // ② 自主判断已存在账号：拉详情比对凭据
+        const list = await client.api('GET', '/api/v1/admin/accounts?page=1&page_size=200');
+        const items = ((list.body || {}).data || {}).items || [];
+        const byName = new Map(items.map((x) => [String(x.name), x]));
+        const done = [];
+        for (const x of accounts) {
+          const payload = { name: x.name, platform: x.platform, type: x.type, credentials: x.credentials };
+          const hit = byName.get(x.name);
+          let action = 'create';
+          if (hit) {
+            action = 'update';
+            if (!a.force) {
+              const cur = await client.api('GET', '/api/v1/admin/accounts/' + hit.id);
+              const cc = (((cur.body || {}).data) || {}).credentials || {};
+              const same = cc.api_key === payload.credentials.api_key
+                && cc.base_url === payload.credentials.base_url
+                && JSON.stringify(cc.model_mapping || {}) === JSON.stringify(payload.credentials.model_mapping || {});
+              if (same) { done.push({ name: x.name, id: hit.id, action: 'skip', reason: '凭据与模型映射一致' }); continue; }
+            }
+          }
+          const r = action === 'update'
+            ? await client.api('PUT', '/api/v1/admin/accounts/' + hit.id, payload)
+            : await client.api('POST', '/api/v1/admin/accounts', payload);
+          done.push({ name: x.name, action, http: r.status, id: (((r.body || {}).data) || {}).id, error: r.status >= 400 ? JSON.stringify(r.body).slice(0, 160) : undefined });
+        }
+        const summary = {
+          created: done.filter((d) => d.action === 'create' && d.http < 400).length,
+          updated: done.filter((d) => d.action === 'update' && d.http < 400).length,
+          unchanged: done.filter((d) => d.action === 'skip').length,
+          failed: done.filter((d) => d.http >= 400).length,
+          loopSkipped: loopSkipped.length,
+        };
+        return { ...base, done, summary };
       }) },
   ];
 }

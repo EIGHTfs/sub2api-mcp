@@ -24,3 +24,6 @@ Thumbs.db
 .idea/
 .vscode/
 node_modules.orig/
+
+# 本地回收站（安全删除的中转，不入库）
+.trash/
