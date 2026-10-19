@@ -102,11 +102,12 @@ export function toolDefs(client) {
         dry_run: { type: 'boolean', description: '默认 true：只返回决策计划，不写网关' },
         only: { type: 'string', description: '只处理指定 provider，逗号分隔，如 "d,agnes"' },
         test_model: { type: 'string', description: '账号自检的测试模型（默认按平台取：openai→gpt-5.4）' },
+        concurrency: { type: 'integer', description: '账号并发上限（默认取 env SUB2API_IMPORT_CONCURRENCY，缺省 5）' },
         force: { type: 'boolean', description: '强制覆盖已存在的同名账号（不比对凭据）' },
       },
       run: A(async (a) => {
         const dry = a.dry_run === undefined ? true : !!a.dry_run;
-        const collected = collectDshProviders({ testModel: a.test_model || undefined });
+        const collected = collectDshProviders({ testModel: a.test_model || undefined, concurrency: a.concurrency });
         const only = String(a.only || '').split(',').map((s) => s.trim()).filter(Boolean);
         let accounts = collected.accounts;
         if (only.length) accounts = accounts.filter((x) => only.includes(x._meta.providerId));
@@ -134,7 +135,7 @@ export function toolDefs(client) {
         const byName = new Map(items.map((x) => [String(x.name), x]));
         const done = [];
         for (const x of accounts) {
-          const payload = { name: x.name, platform: x.platform, type: x.type, credentials: x.credentials };
+          const payload = { name: x.name, platform: x.platform, type: x.type, credentials: x.credentials, concurrency: x.concurrency };
           const hit = byName.get(x.name);
           let action = 'create';
           if (hit) {

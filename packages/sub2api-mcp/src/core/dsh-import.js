@@ -153,7 +153,12 @@ export function platformOf(api) {
 }
 
 /** 汇总：扫描所有来源 → 合并 provider（同 id 取第一个有 baseURL 的 ✓）+ 合并 refs ✓ */
-export function collectDshProviders({ home, testModel = 'gpt-5.4' } = {}) {
+export function collectDshProviders({ home, testModel = 'gpt-5.4', concurrency } = {}) {
+  // 并发数：实参 > 环境变量 SUB2API_IMPORT_CONCURRENCY > 默认 5 ✓（0 会让账号几乎不可用 ✗）
+  const conc = Number(concurrency !== undefined && concurrency !== null && concurrency !== ''
+    ? concurrency
+    : (process.env.SUB2API_IMPORT_CONCURRENCY || 5));
+  const concurrencyOf = (n) => { const v = Number(n); return Number.isFinite(v) && v > 0 ? Math.floor(v) : 5; };
   const h = dshHome(home);
   const files = discoverFiles(h);
 
@@ -201,7 +206,9 @@ export function collectDshProviders({ home, testModel = 'gpt-5.4' } = {}) {
       platform: platformOf(p.api),
       type: 'apikey',
       credentials: { api_key: key, base_url: p.baseURL, api_base_urls: { chat_completions: p.baseURL }, model_mapping: mapping },
-      _meta: { providerId: p.id, api: p.api, baseURL: p.baseURL, models, source: p.source },
+      // 账号并发上限（Sub2API 字段名 = concurrency ✓）默认 5 ✓
+      concurrency: concurrencyOf(conc),
+      _meta: { providerId: p.id, api: p.api, baseURL: p.baseURL, models, source: p.source, concurrency: concurrencyOf(conc) },
     });
   }
   return { home: h, files, providers, accounts, skipped };

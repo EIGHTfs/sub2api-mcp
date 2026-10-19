@@ -117,6 +117,16 @@ Sub2API 的账号自检 `POST /admin/accounts/:id/test` **会忽略传入的 mod
 - 默认按平台取（`--test-model` 可显式覆盖）
 - 同平台存在「非本工具建的」账号时，会先对它实测一次，用读到的模型名更准
 
+### 账号参数
+
+| 参数 | 默认 | 来源 |
+|---|---|---|
+| `concurrency`（账号并发上限） | **5** | 环境变量 `SUB2API_IMPORT_CONCURRENCY` → CLI `--concurrency` / MCP 参数 `concurrency` 覆盖 |
+| `platform` | 按 provider 的 `api` 协议推导 | `openai-completions` → `openai`，`anthropic` → `anthropic` |
+| `model_mapping` | 该 provider 的全部模型（含测试模型别名） | 由 DSH 配置的 `models` 生成 |
+
+> 并发数低于 1 会被修正为 5 —— 设为 0 会让账号几乎不可用。
+
 ### 安全约束
 
 - **回环检测**：baseURL 指向网关自身或其它 Sub2API 实例时打印 ⚠ 警告 —— 这类 provider 不要导入，否则形成循环调用

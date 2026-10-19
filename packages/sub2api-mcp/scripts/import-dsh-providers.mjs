@@ -8,6 +8,7 @@
  *   node scripts/import-dsh-providers.mjs --write --update # 已存在则更新凭据 ✓
  *   node scripts/import-dsh-providers.mjs --only d,agnes   # 只导指定 provider ✓
  *   node scripts/import-dsh-providers.mjs --probe          # 建完立刻探活 ✓
+ *   node scripts/import-dsh-providers.mjs --concurrency 8 # 账号并发上限（默认取 env SUB2API_IMPORT_CONCURRENCY，缺省 5）
  *   node scripts/import-dsh-providers.mjs --test-model gpt-5.4   # 指定测试模型别名（默认 auto ✓）
  *
  * 关于「测试模型」：Sub2API 的账号自检固定用它的全局测试模型，且 /test 会忽略传入的 model ✗。
@@ -76,7 +77,7 @@ if (testModel) {
 console.log('测试模型 : ' + testModel + ' ' + testModelNote);
 
 // ── 3) 读 DSH 侧提供商（多来源自动发现 ✓）
-const collected = collectDshProviders({ home: opt('--dsh-home', ''), testModel });
+const collected = collectDshProviders({ home: opt('--dsh-home', ''), testModel, concurrency: opt('--concurrency', '') });
 console.log('DSH_HOME :', collected.home);
 console.log('配置文件（自动发现 ' + collected.files.configs.length + ' 个）:');
 for (const f of collected.files.configs) console.log('   - ' + f);
@@ -130,7 +131,7 @@ const byName = new Map(existing.map((a) => [String(a.name), a]));
 let created = 0, updated = 0, skipped = 0, failed = 0;
 const touchedIds = [];
 for (const a of accounts) {
-  const payload = { name: a.name, platform: a.platform, type: a.type, credentials: a.credentials };
+  const payload = { name: a.name, platform: a.platform, type: a.type, credentials: a.credentials, concurrency: a.concurrency };
   const hit = byName.get(a.name);
   if (hit && !update) { console.log('  = 跳过（已存在）: ' + a.name); skipped++; continue; }
   if (hit && update) {
