@@ -1,9 +1,22 @@
 {
   "name": "sub2api-mcp",
   "version": "0.1.0",
-  "description": "MCP server for Sub2API — manage users, balances, upstream accounts, groups, API keys, usage. Works with any MCP-capable agent (DSH, Claude Desktop, Claude Code, Cursor, ...).",
+  "description": "MCP server for Sub2API — manage users, balances, upstream accounts, groups, API keys, usage and account probing. Works with any MCP-capable agent (DSH, Claude Desktop, Claude Code, Cursor, ...).",
   "type": "module",
   "license": "MIT",
+  "author": {
+    "name": "EIGHTfs",
+    "url": "https://github.com/EIGHTfs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EIGHTfs/sub2api-mcp.git",
+    "directory": "packages/sub2api-mcp"
+  },
+  "homepage": "https://github.com/EIGHTfs/sub2api-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/EIGHTfs/sub2api-mcp/issues"
+  },
   "engines": {
     "node": ">=18.17"
   },
@@ -28,7 +41,10 @@
     "sub2api",
     "ai-gateway",
     "admin",
-    "agent"
+    "agent",
+    "llm-gateway",
+    "claude",
+    "openai-compatible"
   ],
   "scripts": {
     "start": "node src/cli.js serve",

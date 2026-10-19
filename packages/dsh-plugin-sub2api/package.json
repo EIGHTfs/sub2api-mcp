@@ -1,9 +1,22 @@
 {
   "name": "dsh-plugin-sub2api",
   "version": "0.1.0",
-  "description": "DSH plugin: Sub2API gateway in the settings sidebar (credentials + auto MCP registration). Broad DSH compatibility declared; real support self-checked at runtime.",
+  "description": "DSH plugin: Sub2API gateway in the settings sidebar — credentials, connection status, MCP tool-profile slider (readonly/readwrite/full), logout, and automatic MCP registration. Broad DSH compatibility declared; real support self-checked at runtime.",
   "type": "module",
   "license": "MIT",
+  "author": {
+    "name": "EIGHTfs",
+    "url": "https://github.com/EIGHTfs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EIGHTfs/sub2api-mcp.git",
+    "directory": "packages/dsh-plugin-sub2api"
+  },
+  "homepage": "https://github.com/EIGHTfs/sub2api-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/EIGHTfs/sub2api-mcp/issues"
+  },
   "engines": {
     "node": ">=18.17"
   },
@@ -32,12 +45,20 @@
     "cordis.patch.yml",
     "README.md"
   ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "sub2api",
+    "mcp",
+    "gateway",
+    "admin"
+  ],
   "scripts": {
-    "doctor": "node src/host/doctor.js",
-    "build": "node scripts/build.mjs"
+    "doctor": "node src/host/doctor.js"
   },
   "dependencies": {
-    "sub2api-mcp": "^0.1.0"
+    "sub2api-mcp": ">=0.1.0 <0.2.0-0"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-tools": ">=0.1.0",
