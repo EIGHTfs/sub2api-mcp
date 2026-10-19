@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>UI 静态骨架 · /volume10/DeepSeekHarness/projects/sub2api-mcp/packages/dsh-plugin-sub2api/lib/client.js</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; padding:24px; background:#12141a; color:#dfe3ea;
+         font:14px/1.6 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  h2 { font-size:15px; margin:24px 0 8px; color:#8ab4f8; }
+  .meta { color:#8b93a1; font-size:12px; margin-bottom:16px; }
+  .stat { display:inline-block; margin-right:14px; }
+  .stat b { color:#e8eaf0; font-size:15px; }
+  .warn { background:#2a2118; border-left:3px solid #d9a441; padding:10px 14px; border-radius:6px; }
+  .warn li { color:#e2c07a; }
+  table { border-collapse:collapse; width:100%; font-size:12.5px; }
+  th,td { text-align:left; padding:6px 10px; border-bottom:1px solid #252936; vertical-align:top; }
+  th { color:#8b93a1; font-weight:500; }
+  pre.tree { background:#171a22; border:1px solid #252936; border-radius:8px; padding:14px;
+             overflow:auto; font:12.5px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace; color:#b9c2d0; }
+  .stage { background:#0d0f14; border:1px solid #2a2f3d; border-radius:8px; padding:18px;
+           margin:10px 0 4px; }
+  .stage * { max-width:100%; }
+  .ph { color:#6b7590; font-style:italic; }
+  .comp { color:#d98ad9; font-weight:600; }
+  .note { color:#7d8698; font-size:12px; }
+</style></head>
+<body>
+<h1>UI 静态骨架 · /volume10/DeepSeekHarness/projects/sub2api-mcp/packages/dsh-plugin-sub2api/lib/client.js</h1>
+<div class="meta">6267 字节 / 126 行 · 生成于 2026-10-19T01:24:55.661Z</div>
+<div>
+  <span class="stat">控件 <b>20</b></span>
+  <span class="stat">插槽 <b>1</b></span>
+  <span class="stat">表达式 <b>7</b></span>
+  <span class="stat">组件占位 <b>4</b></span>
+</div>
+
+<h2>插槽注册</h2>
+<table><thead><tr><th>插槽</th><th>组件</th><th>展开</th><th>节点</th><th>位置</th></tr></thead>
+<tbody><tr><td>settings.section</td><td>s2m_Section</td>
+<td>✅ 已展开</td><td>2</td><td>L113</td></tr></tbody></table>
+
+<h2>解析告警</h2>
+<ul class="warn"><li>无</li></ul>
+
+<h2>插槽展开</h2>
+<h3>settings.section · s2m_Section</h3>
+<pre class="tree">input  {padding: 8px; border-radius: 6px; border: 1px solid rgba(127,127,127,0.35); background: transparent}  L34
+div  {display: flex; flex-direction: column; gap: 14px; max-width: 560px}  L48
+  h3  {margin: 0px}  L49
+    &quot;Sub2API 网关&quot;
+  p  {margin: 0px; opacity: 0.7px; font-size: 12px}  L50
+    &quot;用管理员账号连接 Sub2API。保存后 MCP 工具即可通过网关管理用户 / 余额 / 上游账号 / 分组 / API Key。&quot;
+  div  {font-size: 12px; line-height: 1.7px; padding: 8px 10px; border-radius: 6px; background: rgba(127,127,127,0.12)}  L52
+    div  L53
+      {expr}  // '状态：' + (status == null ? '加载中…' : (status.configured ? '● 已
+    div  L54
+      {expr}  // probeLine
+    {expr}  // status &amp;&amp; status.configured ? s2m_react.createElement('div',
+      div  {opacity: 0.65px}  L55
+        &quot;凭据：' + (status.email || '') + '（密码 ' + (status.passwordMasked || '') + '）&quot;
+  &lt;s2m_Field&gt;  // 组件（静态未展开）  L57
+  &lt;s2m_Field&gt;  // 组件（静态未展开）  L58
+  &lt;s2m_Field&gt;  // 组件（静态未展开）  L59
+  div  {display: flex; gap: 8px; align-items: center}  L60
+    button  {padding: 8px 16px; border-radius: 6px}  L61
+      {expr}  // busy ? '保存中…' : '保存'
+    span  {font-size: 12px; opacity: 0.75px}  L63
+      {expr}  // msg
+  div  {font-size: 12px; opacity: 0.6px; line-height: 1.6px}  L65
+    div  L66
+      &quot;· MCP 服务器：sub2api-mcp（默认只读档 readonly；工具数随档位 9 / 18 / 19）&quot;
+    div  L67
+      &quot;· 改档位：编辑 &lt;DSH_HOME&gt;/mcp.json 的 env.MCP_TOOL_PROFILE（readonly / readwrite / full）&quot;</pre>
+<div class="stage"><input style="padding: 8px; border-radius: 6px; border: 1px solid rgba(127,127,127,0.35); background: transparent" data-line="34"><div style="display: flex; flex-direction: column; gap: 14px; max-width: 560px" data-line="48"><h3 style="margin: 0px" data-line="49">Sub2API 网关</h3><p style="margin: 0px; opacity: 0.7px; font-size: 12px" data-line="50">用管理员账号连接 Sub2API。保存后 MCP 工具即可通过网关管理用户 / 余额 / 上游账号 / 分组 / API Key。</p><div style="font-size: 12px; line-height: 1.7px; padding: 8px 10px; border-radius: 6px; background: rgba(127,127,127,0.12)" data-line="52"><div data-line="53"><span class="ph">{表达式}</span></div><div data-line="54"><span class="ph">{表达式}</span></div><span class="ph">{表达式}</span></div><span class="comp">&lt;s2m_Field&gt;</span><span class="comp">&lt;s2m_Field&gt;</span><span class="comp">&lt;s2m_Field&gt;</span><div style="display: flex; gap: 8px; align-items: center" data-line="60"><button style="padding: 8px 16px; border-radius: 6px" data-line="61"><span class="ph">{表达式}</span></button><span style="font-size: 12px; opacity: 0.75px" data-line="63"><span class="ph">{表达式}</span></span></div><div style="font-size: 12px; opacity: 0.6px; line-height: 1.6px" data-line="65"><div data-line="66">· MCP 服务器：sub2api-mcp（默认只读档 readonly；工具数随档位 9 / 18 / 19）</div><div data-line="67">· 改档位：编辑 &lt;DSH_HOME&gt;/mcp.json 的 env.MCP_TOOL_PROFILE（readonly / readwrite / full）</div></div></div></div>
+
+<h2>结构树（全文件 · 源码级）</h2>
+<pre class="tree">label  {display: flex; flex-direction: column; gap: 6px; font-size: 13px}  L33
+  span  {opacity: 0.75px}  L34
+    {expr}  // props.label
+  {expr}  // props.input
+input  {padding: 8px; border-radius: 6px; border: 1px solid rgba(127,127,127,0.35); background: transparent}  L72
+div  {display: flex; flex-direction: column; gap: 14px; max-width: 560px}  L86
+  h3  {margin: 0px}  L87
+    &quot;Sub2API 网关&quot;
+  p  {margin: 0px; opacity: 0.7px; font-size: 12px}  L88
+    &quot;用管理员账号连接 Sub2API。保存后 MCP 工具即可通过网关管理用户 / 余额 / 上游账号 / 分组 / API Key。&quot;
+  div  {font-size: 12px; line-height: 1.7px; padding: 8px 10px; border-radius: 6px; background: rgba(127,127,127,0.12)}  L90
+    div  L91
+      {expr}  // '状态：' + (status == null ? '加载中…' : (status.configured ? '● 已
+    div  L92
+      {expr}  // probeLine
+    {expr}  // status &amp;&amp; status.configured ? s2m_react.createElement('div',
+      div  {opacity: 0.65px}  L93
+        &quot;凭据：' + (status.email || '') + '（密码 ' + (status.passwordMasked || '') + '）&quot;
+  &lt;s2m_Field&gt;  // 组件（静态未展开）  L95
+  &lt;s2m_Field&gt;  // 组件（静态未展开）  L96
+  &lt;s2m_Field&gt;  // 组件（静态未展开）  L97
+  div  {display: flex; gap: 8px; align-items: center}  L98
+    button  {padding: 8px 16px; border-radius: 6px}  L99
+      {expr}  // busy ? '保存中…' : '保存'
+    span  {font-size: 12px; opacity: 0.75px}  L101
+      {expr}  // msg
+  div  {font-size: 12px; opacity: 0.6px; line-height: 1.6px}  L103
+    div  L104
+      &quot;· MCP 服务器：sub2api-mcp（默认只读档 readonly；工具数随档位 9 / 18 / 19）&quot;
+    div  L105
+      &quot;· 改档位：编辑 &lt;DSH_HOME&gt;/mcp.json 的 env.MCP_TOOL_PROFILE（readonly / readwrite / full）&quot;
+&lt;s2m_Section&gt;  // 组件（静态未展开）  L118</pre>
+
+<h2>渲染预览（静态还原，非运行结果）</h2>
+<div class="stage"><label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px" data-line="33"><span style="opacity: 0.75px" data-line="34"><span class="ph">{表达式}</span></span><span class="ph">{表达式}</span></label><input style="padding: 8px; border-radius: 6px; border: 1px solid rgba(127,127,127,0.35); background: transparent" data-line="72"><div style="display: flex; flex-direction: column; gap: 14px; max-width: 560px" data-line="86"><h3 style="margin: 0px" data-line="87">Sub2API 网关</h3><p style="margin: 0px; opacity: 0.7px; font-size: 12px" data-line="88">用管理员账号连接 Sub2API。保存后 MCP 工具即可通过网关管理用户 / 余额 / 上游账号 / 分组 / API Key。</p><div style="font-size: 12px; line-height: 1.7px; padding: 8px 10px; border-radius: 6px; background: rgba(127,127,127,0.12)" data-line="90"><div data-line="91"><span class="ph">{表达式}</span></div><div data-line="92"><span class="ph">{表达式}</span></div><span class="ph">{表达式}</span></div><span class="comp">&lt;s2m_Field&gt;</span><span class="comp">&lt;s2m_Field&gt;</span><span class="comp">&lt;s2m_Field&gt;</span><div style="display: flex; gap: 8px; align-items: center" data-line="98"><button style="padding: 8px 16px; border-radius: 6px" data-line="99"><span class="ph">{表达式}</span></button><span style="font-size: 12px; opacity: 0.75px" data-line="101"><span class="ph">{表达式}</span></span></div><div style="font-size: 12px; opacity: 0.6px; line-height: 1.6px" data-line="103"><div data-line="104">· MCP 服务器：sub2api-mcp（默认只读档 readonly；工具数随档位 9 / 18 / 19）</div><div data-line="105">· 改档位：编辑 &lt;DSH_HOME&gt;/mcp.json 的 env.MCP_TOOL_PROFILE（readonly / readwrite / full）</div></div></div><span class="comp">&lt;s2m_Section&gt;</span></div>
+<p class="note">预览只反映「代码里写了什么」：条件分支、列表数据、i18n 文案、主题样式都不会参与求值。
+判断「实际渲染出来没有」请在真实宿主里看，或用将来的渲染探针（visible 字段）。</p>
+
+<h2>控件清单（20）</h2>
+<table><thead><tr><th>标签</th><th>文本</th><th>class</th><th>内联样式</th><th>位置</th></tr></thead>
+<tbody><tr>
+<td>label</td><td></td><td></td>
+<td>display: flex; flex-direction: column; gap: 6px; font-size: 13px</td><td>L33</td></tr>
+<tr>
+<td>span</td><td></td><td></td>
+<td>opacity: 0.75px</td><td>L34</td></tr>
+<tr>
+<td>input</td><td></td><td></td>
+<td>padding: 8px; border-radius: 6px; border: 1px solid rgba(127,127,127,0.35); background: transparent</td><td>L72</td></tr>
+<tr>
+<td>div</td><td></td><td></td>
+<td>display: flex; flex-direction: column; gap: 14px; max-width: 560px</td><td>L86</td></tr>
+<tr>
+<td>h3</td><td>Sub2API 网关</td><td></td>
+<td>margin: 0px</td><td>L87</td></tr>
+<tr>
+<td>p</td><td>用管理员账号连接 Sub2API。保存后 MCP 工具即可通过网关管理用户 / 余额 / 上游账号 / 分组 / API Key。</td><td></td>
+<td>margin: 0px; opacity: 0.7px; font-size: 12px</td><td>L88</td></tr>
+<tr>
+<td>div</td><td></td><td></td>
+<td>font-size: 12px; line-height: 1.7px; padding: 8px 10px; border-radius: 6px; background: rgba(127,127,127,0.12)</td><td>L90</td></tr>
+<tr>
+<td>div</td><td></td><td></td>
+<td></td><td>L91</td></tr>
+<tr>
+<td>div</td><td></td><td></td>
+<td></td><td>L92</td></tr>
+<tr>
+<td>div</td><td>凭据：' + (status.email || '') + '（密码 ' + (status.passwordMasked || '') + '）</td><td></td>
+<td>opacity: 0.65px</td><td>L93</td></tr>
+<tr>
+<td>&lt;s2m_Field&gt;</td><td></td><td></td>
+<td></td><td>L95</td></tr>
+<tr>
+<td>&lt;s2m_Field&gt;</td><td></td><td></td>
+<td></td><td>L96</td></tr>
+<tr>
+<td>&lt;s2m_Field&gt;</td><td></td><td></td>
+<td></td><td>L97</td></tr>
+<tr>
+<td>div</td><td></td><td></td>
+<td>display: flex; gap: 8px; align-items: center</td><td>L98</td></tr>
+<tr>
+<td>button</td><td></td><td></td>
+<td>padding: 8px 16px; border-radius: 6px</td><td>L99</td></tr>
+<tr>
+<td>span</td><td></td><td></td>
+<td>font-size: 12px; opacity: 0.75px</td><td>L101</td></tr>
+<tr>
+<td>div</td><td></td><td></td>
+<td>font-size: 12px; opacity: 0.6px; line-height: 1.6px</td><td>L103</td></tr>
+<tr>
+<td>div</td><td>· MCP 服务器：sub2api-mcp（默认只读档 readonly；工具数随档位 9 / 18 / 19）</td><td></td>
+<td></td><td>L104</td></tr>
+<tr>
+<td>div</td><td>· 改档位：编辑 &lt;DSH_HOME&gt;/mcp.json 的 env.MCP_TOOL_PROFILE（readonly / readwrite / full）</td><td></td>
+<td></td><td>L105</td></tr>
+<tr>
+<td>&lt;s2m_Section&gt;</td><td></td><td></td>
+<td></td><td>L118</td></tr></tbody></table>
+
+</body></html>

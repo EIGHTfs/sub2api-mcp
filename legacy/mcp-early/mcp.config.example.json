@@ -1,0 +1,29 @@
+{
+  "_说明": "复制为 mcp.config.json 后填自己的值；环境变量优先级更高（SUB2API_* / MCP_*）",
+  "sub2api": {
+    "url": "http://127.0.0.1:8080",
+    "email": "admin@sa6400.local",
+    "password": "CHANGE_ME",
+    "verifyTls": true,
+    "timeoutMs": 30000
+  },
+  "server": {
+    "name": "sub2api-admin",
+    "version": "1.0.0",
+    "enableWriteTools": true,
+    "enableDeleteTools": true
+  },
+  "runtime": {
+    "node": "/var/packages/DeepSeekHarness-NAS/target/bin/node",
+    "python": "python3"
+  },
+  "clients": {
+    "dsh": {
+      "configPath": "~/.dsh/mcp.json",
+      "note": "DSH 的 MCP 配置文件路径（不同版本可能不同，按实际填）"
+    },
+    "claudeDesktop": {
+      "configPath": "~/Library/Application Support/Claude/claude_desktop_config.json"
+    }
+  }
+}

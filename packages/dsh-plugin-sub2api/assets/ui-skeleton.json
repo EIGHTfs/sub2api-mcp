@@ -1,0 +1,950 @@
+{
+  "schema": "dsh-ui-skeleton/1",
+  "generatedAt": "2026-10-19T01:24:55.661Z",
+  "source": {
+    "file": "/volume10/DeepSeekHarness/projects/sub2api-mcp/packages/dsh-plugin-sub2api/lib/client.js",
+    "bytes": 6267,
+    "lines": 126,
+    "minified": false
+  },
+  "slots": [
+    {
+      "slot": "settings.section",
+      "id": "dsh-plugin-sub2api",
+      "component": "s2m_Section",
+      "line": 113,
+      "resolved": true,
+      "nodeCount": 2
+    }
+  ],
+  "slotTrees": [
+    {
+      "slot": "settings.section",
+      "component": "s2m_Section",
+      "tree": [
+        {
+          "kind": "element",
+          "tag": "input",
+          "component": "",
+          "props": {
+            "className": "",
+            "style": "padding: 8px; border-radius: 6px; border: 1px solid rgba(127,127,127,0.35); background: transparent",
+            "others": [
+              "type",
+              "value",
+              "placeholder",
+              "onChange"
+            ]
+          },
+          "children": [],
+          "line": 34
+        },
+        {
+          "kind": "element",
+          "tag": "div",
+          "component": "",
+          "props": {
+            "className": "",
+            "style": "display: flex; flex-direction: column; gap: 14px; max-width: 560px",
+            "others": []
+          },
+          "children": [
+            {
+              "kind": "element",
+              "tag": "h3",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": "margin: 0px",
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "text": "Sub2API 网关",
+                  "line": 49
+                }
+              ],
+              "line": 49
+            },
+            {
+              "kind": "element",
+              "tag": "p",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": "margin: 0px; opacity: 0.7px; font-size: 12px",
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "text": "用管理员账号连接 Sub2API。保存后 MCP 工具即可通过网关管理用户 / 余额 / 上游账号 / 分组 / API Key。",
+                  "line": 50
+                }
+              ],
+              "line": 50
+            },
+            {
+              "kind": "element",
+              "tag": "div",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": "font-size: 12px; line-height: 1.7px; padding: 8px 10px; border-radius: 6px; background: rgba(127,127,127,0.12)",
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "element",
+                  "tag": "div",
+                  "component": "",
+                  "props": {
+                    "className": "",
+                    "style": null,
+                    "others": []
+                  },
+                  "children": [
+                    {
+                      "kind": "expr",
+                      "text": "",
+                      "i18nKey": "",
+                      "raw": "'状态：' + (status == null ? '加载中…' : (status.configured ? '● 已",
+                      "line": 53,
+                      "conditional": false,
+                      "children": []
+                    }
+                  ],
+                  "line": 53
+                },
+                {
+                  "kind": "element",
+                  "tag": "div",
+                  "component": "",
+                  "props": {
+                    "className": "",
+                    "style": null,
+                    "others": []
+                  },
+                  "children": [
+                    {
+                      "kind": "expr",
+                      "text": "",
+                      "i18nKey": "",
+                      "raw": "probeLine",
+                      "line": 54,
+                      "conditional": false,
+                      "children": []
+                    }
+                  ],
+                  "line": 54
+                },
+                {
+                  "kind": "expr",
+                  "text": "",
+                  "i18nKey": "",
+                  "raw": "status && status.configured ? s2m_react.createElement('div',",
+                  "line": 54,
+                  "conditional": true,
+                  "children": [
+                    {
+                      "kind": "element",
+                      "tag": "div",
+                      "component": "",
+                      "props": {
+                        "className": "",
+                        "style": "opacity: 0.65px",
+                        "others": []
+                      },
+                      "children": [
+                        {
+                          "kind": "text",
+                          "text": "凭据：' + (status.email || '') + '（密码 ' + (status.passwordMasked || '') + '）",
+                          "line": 55
+                        }
+                      ],
+                      "line": 55
+                    }
+                  ]
+                }
+              ],
+              "line": 52
+            },
+            {
+              "kind": "component",
+              "tag": "",
+              "component": "s2m_Field",
+              "props": {
+                "className": "",
+                "style": null,
+                "others": [
+                  "label",
+                  "input"
+                ]
+              },
+              "children": [],
+              "line": 57
+            },
+            {
+              "kind": "component",
+              "tag": "",
+              "component": "s2m_Field",
+              "props": {
+                "className": "",
+                "style": null,
+                "others": [
+                  "label",
+                  "input"
+                ]
+              },
+              "children": [],
+              "line": 58
+            },
+            {
+              "kind": "component",
+              "tag": "",
+              "component": "s2m_Field",
+              "props": {
+                "className": "",
+                "style": null,
+                "others": [
+                  "label",
+                  "input"
+                ]
+              },
+              "children": [],
+              "line": 59
+            },
+            {
+              "kind": "element",
+              "tag": "div",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": "display: flex; gap: 8px; align-items: center",
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "element",
+                  "tag": "button",
+                  "component": "",
+                  "props": {
+                    "className": "",
+                    "style": "padding: 8px 16px; border-radius: 6px",
+                    "others": [
+                      "onClick",
+                      "disabled"
+                    ]
+                  },
+                  "children": [
+                    {
+                      "kind": "expr",
+                      "text": "",
+                      "i18nKey": "",
+                      "raw": "busy ? '保存中…' : '保存'",
+                      "line": 61,
+                      "conditional": false,
+                      "children": []
+                    }
+                  ],
+                  "line": 61
+                },
+                {
+                  "kind": "element",
+                  "tag": "span",
+                  "component": "",
+                  "props": {
+                    "className": "",
+                    "style": "font-size: 12px; opacity: 0.75px",
+                    "others": []
+                  },
+                  "children": [
+                    {
+                      "kind": "expr",
+                      "text": "",
+                      "i18nKey": "",
+                      "raw": "msg",
+                      "line": 63,
+                      "conditional": false,
+                      "children": []
+                    }
+                  ],
+                  "line": 63
+                }
+              ],
+              "line": 60
+            },
+            {
+              "kind": "element",
+              "tag": "div",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": "font-size: 12px; opacity: 0.6px; line-height: 1.6px",
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "element",
+                  "tag": "div",
+                  "component": "",
+                  "props": {
+                    "className": "",
+                    "style": null,
+                    "others": []
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "· MCP 服务器：sub2api-mcp（默认只读档 readonly；工具数随档位 9 / 18 / 19）",
+                      "line": 66
+                    }
+                  ],
+                  "line": 66
+                },
+                {
+                  "kind": "element",
+                  "tag": "div",
+                  "component": "",
+                  "props": {
+                    "className": "",
+                    "style": null,
+                    "others": []
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "· 改档位：编辑 <DSH_HOME>/mcp.json 的 env.MCP_TOOL_PROFILE（readonly / readwrite / full）",
+                      "line": 67
+                    }
+                  ],
+                  "line": 67
+                }
+              ],
+              "line": 65
+            }
+          ],
+          "line": 48
+        }
+      ]
+    }
+  ],
+  "tree": [
+    {
+      "kind": "element",
+      "tag": "label",
+      "component": "",
+      "props": {
+        "className": "",
+        "style": "display: flex; flex-direction: column; gap: 6px; font-size: 13px",
+        "others": []
+      },
+      "children": [
+        {
+          "kind": "element",
+          "tag": "span",
+          "component": "",
+          "props": {
+            "className": "",
+            "style": "opacity: 0.75px",
+            "others": []
+          },
+          "children": [
+            {
+              "kind": "expr",
+              "text": "",
+              "i18nKey": "",
+              "raw": "props.label",
+              "line": 34,
+              "conditional": false,
+              "children": []
+            }
+          ],
+          "line": 34
+        },
+        {
+          "kind": "expr",
+          "text": "",
+          "i18nKey": "",
+          "raw": "props.input",
+          "line": 34,
+          "conditional": false,
+          "children": []
+        }
+      ],
+      "line": 33
+    },
+    {
+      "kind": "element",
+      "tag": "input",
+      "component": "",
+      "props": {
+        "className": "",
+        "style": "padding: 8px; border-radius: 6px; border: 1px solid rgba(127,127,127,0.35); background: transparent",
+        "others": [
+          "type",
+          "value",
+          "placeholder",
+          "onChange"
+        ]
+      },
+      "children": [],
+      "line": 72
+    },
+    {
+      "kind": "element",
+      "tag": "div",
+      "component": "",
+      "props": {
+        "className": "",
+        "style": "display: flex; flex-direction: column; gap: 14px; max-width: 560px",
+        "others": []
+      },
+      "children": [
+        {
+          "kind": "element",
+          "tag": "h3",
+          "component": "",
+          "props": {
+            "className": "",
+            "style": "margin: 0px",
+            "others": []
+          },
+          "children": [
+            {
+              "kind": "text",
+              "text": "Sub2API 网关",
+              "line": 87
+            }
+          ],
+          "line": 87
+        },
+        {
+          "kind": "element",
+          "tag": "p",
+          "component": "",
+          "props": {
+            "className": "",
+            "style": "margin: 0px; opacity: 0.7px; font-size: 12px",
+            "others": []
+          },
+          "children": [
+            {
+              "kind": "text",
+              "text": "用管理员账号连接 Sub2API。保存后 MCP 工具即可通过网关管理用户 / 余额 / 上游账号 / 分组 / API Key。",
+              "line": 88
+            }
+          ],
+          "line": 88
+        },
+        {
+          "kind": "element",
+          "tag": "div",
+          "component": "",
+          "props": {
+            "className": "",
+            "style": "font-size: 12px; line-height: 1.7px; padding: 8px 10px; border-radius: 6px; background: rgba(127,127,127,0.12)",
+            "others": []
+          },
+          "children": [
+            {
+              "kind": "element",
+              "tag": "div",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": null,
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "expr",
+                  "text": "",
+                  "i18nKey": "",
+                  "raw": "'状态：' + (status == null ? '加载中…' : (status.configured ? '● 已",
+                  "line": 91,
+                  "conditional": false,
+                  "children": []
+                }
+              ],
+              "line": 91
+            },
+            {
+              "kind": "element",
+              "tag": "div",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": null,
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "expr",
+                  "text": "",
+                  "i18nKey": "",
+                  "raw": "probeLine",
+                  "line": 92,
+                  "conditional": false,
+                  "children": []
+                }
+              ],
+              "line": 92
+            },
+            {
+              "kind": "expr",
+              "text": "",
+              "i18nKey": "",
+              "raw": "status && status.configured ? s2m_react.createElement('div',",
+              "line": 92,
+              "conditional": true,
+              "children": [
+                {
+                  "kind": "element",
+                  "tag": "div",
+                  "component": "",
+                  "props": {
+                    "className": "",
+                    "style": "opacity: 0.65px",
+                    "others": []
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "text": "凭据：' + (status.email || '') + '（密码 ' + (status.passwordMasked || '') + '）",
+                      "line": 93
+                    }
+                  ],
+                  "line": 93
+                }
+              ]
+            }
+          ],
+          "line": 90
+        },
+        {
+          "kind": "component",
+          "tag": "",
+          "component": "s2m_Field",
+          "props": {
+            "className": "",
+            "style": null,
+            "others": [
+              "label",
+              "input"
+            ]
+          },
+          "children": [],
+          "line": 95
+        },
+        {
+          "kind": "component",
+          "tag": "",
+          "component": "s2m_Field",
+          "props": {
+            "className": "",
+            "style": null,
+            "others": [
+              "label",
+              "input"
+            ]
+          },
+          "children": [],
+          "line": 96
+        },
+        {
+          "kind": "component",
+          "tag": "",
+          "component": "s2m_Field",
+          "props": {
+            "className": "",
+            "style": null,
+            "others": [
+              "label",
+              "input"
+            ]
+          },
+          "children": [],
+          "line": 97
+        },
+        {
+          "kind": "element",
+          "tag": "div",
+          "component": "",
+          "props": {
+            "className": "",
+            "style": "display: flex; gap: 8px; align-items: center",
+            "others": []
+          },
+          "children": [
+            {
+              "kind": "element",
+              "tag": "button",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": "padding: 8px 16px; border-radius: 6px",
+                "others": [
+                  "onClick",
+                  "disabled"
+                ]
+              },
+              "children": [
+                {
+                  "kind": "expr",
+                  "text": "",
+                  "i18nKey": "",
+                  "raw": "busy ? '保存中…' : '保存'",
+                  "line": 99,
+                  "conditional": false,
+                  "children": []
+                }
+              ],
+              "line": 99
+            },
+            {
+              "kind": "element",
+              "tag": "span",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": "font-size: 12px; opacity: 0.75px",
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "expr",
+                  "text": "",
+                  "i18nKey": "",
+                  "raw": "msg",
+                  "line": 101,
+                  "conditional": false,
+                  "children": []
+                }
+              ],
+              "line": 101
+            }
+          ],
+          "line": 98
+        },
+        {
+          "kind": "element",
+          "tag": "div",
+          "component": "",
+          "props": {
+            "className": "",
+            "style": "font-size: 12px; opacity: 0.6px; line-height: 1.6px",
+            "others": []
+          },
+          "children": [
+            {
+              "kind": "element",
+              "tag": "div",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": null,
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "text": "· MCP 服务器：sub2api-mcp（默认只读档 readonly；工具数随档位 9 / 18 / 19）",
+                  "line": 104
+                }
+              ],
+              "line": 104
+            },
+            {
+              "kind": "element",
+              "tag": "div",
+              "component": "",
+              "props": {
+                "className": "",
+                "style": null,
+                "others": []
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "text": "· 改档位：编辑 <DSH_HOME>/mcp.json 的 env.MCP_TOOL_PROFILE（readonly / readwrite / full）",
+                  "line": 105
+                }
+              ],
+              "line": 105
+            }
+          ],
+          "line": 103
+        }
+      ],
+      "line": 86
+    },
+    {
+      "kind": "component",
+      "tag": "",
+      "component": "s2m_Section",
+      "props": {
+        "className": "",
+        "style": null,
+        "others": []
+      },
+      "children": [],
+      "line": 118
+    }
+  ],
+  "controls": [
+    {
+      "tag": "label",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "display: flex; flex-direction: column; gap: 6px; font-size: 13px",
+      "others": [],
+      "line": 33,
+      "path": "label",
+      "visible": null
+    },
+    {
+      "tag": "span",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "opacity: 0.75px",
+      "others": [],
+      "line": 34,
+      "path": "label > span",
+      "visible": null
+    },
+    {
+      "tag": "input",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "padding: 8px; border-radius: 6px; border: 1px solid rgba(127,127,127,0.35); background: transparent",
+      "others": [
+        "type",
+        "value",
+        "placeholder",
+        "onChange"
+      ],
+      "line": 72,
+      "path": "input",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "display: flex; flex-direction: column; gap: 14px; max-width: 560px",
+      "others": [],
+      "line": 86,
+      "path": "div",
+      "visible": null
+    },
+    {
+      "tag": "h3",
+      "component": "",
+      "text": "Sub2API 网关",
+      "className": "",
+      "style": "margin: 0px",
+      "others": [],
+      "line": 87,
+      "path": "div > h3",
+      "visible": null
+    },
+    {
+      "tag": "p",
+      "component": "",
+      "text": "用管理员账号连接 Sub2API。保存后 MCP 工具即可通过网关管理用户 / 余额 / 上游账号 / 分组 / API Key。",
+      "className": "",
+      "style": "margin: 0px; opacity: 0.7px; font-size: 12px",
+      "others": [],
+      "line": 88,
+      "path": "div > p",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "font-size: 12px; line-height: 1.7px; padding: 8px 10px; border-radius: 6px; background: rgba(127,127,127,0.12)",
+      "others": [],
+      "line": 90,
+      "path": "div > div",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "",
+      "others": [],
+      "line": 91,
+      "path": "div > div > div",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "",
+      "others": [],
+      "line": 92,
+      "path": "div > div > div",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "凭据：' + (status.email || '') + '（密码 ' + (status.passwordMasked || '') + '）",
+      "className": "",
+      "style": "opacity: 0.65px",
+      "others": [],
+      "line": 93,
+      "path": "div > div > div",
+      "visible": null
+    },
+    {
+      "tag": "",
+      "component": "s2m_Field",
+      "text": "",
+      "className": "",
+      "style": "",
+      "others": [
+        "label",
+        "input"
+      ],
+      "line": 95,
+      "path": "div > <s2m_Field>",
+      "visible": null
+    },
+    {
+      "tag": "",
+      "component": "s2m_Field",
+      "text": "",
+      "className": "",
+      "style": "",
+      "others": [
+        "label",
+        "input"
+      ],
+      "line": 96,
+      "path": "div > <s2m_Field>",
+      "visible": null
+    },
+    {
+      "tag": "",
+      "component": "s2m_Field",
+      "text": "",
+      "className": "",
+      "style": "",
+      "others": [
+        "label",
+        "input"
+      ],
+      "line": 97,
+      "path": "div > <s2m_Field>",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "display: flex; gap: 8px; align-items: center",
+      "others": [],
+      "line": 98,
+      "path": "div > div",
+      "visible": null
+    },
+    {
+      "tag": "button",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "padding: 8px 16px; border-radius: 6px",
+      "others": [
+        "onClick",
+        "disabled"
+      ],
+      "line": 99,
+      "path": "div > div > button",
+      "visible": null
+    },
+    {
+      "tag": "span",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "font-size: 12px; opacity: 0.75px",
+      "others": [],
+      "line": 101,
+      "path": "div > div > span",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "",
+      "className": "",
+      "style": "font-size: 12px; opacity: 0.6px; line-height: 1.6px",
+      "others": [],
+      "line": 103,
+      "path": "div > div",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "· MCP 服务器：sub2api-mcp（默认只读档 readonly；工具数随档位 9 / 18 / 19）",
+      "className": "",
+      "style": "",
+      "others": [],
+      "line": 104,
+      "path": "div > div > div",
+      "visible": null
+    },
+    {
+      "tag": "div",
+      "component": "",
+      "text": "· 改档位：编辑 <DSH_HOME>/mcp.json 的 env.MCP_TOOL_PROFILE（readonly / readwrite / full）",
+      "className": "",
+      "style": "",
+      "others": [],
+      "line": 105,
+      "path": "div > div > div",
+      "visible": null
+    },
+    {
+      "tag": "",
+      "component": "s2m_Section",
+      "text": "",
+      "className": "",
+      "style": "",
+      "others": [],
+      "line": 118,
+      "path": "<s2m_Section>",
+      "visible": null
+    }
+  ],
+  "stats": {
+    "controls": 20,
+    "byTag": {
+      "label": 1,
+      "span": 2,
+      "input": 1,
+      "div": 9,
+      "h3": 1,
+      "p": 1,
+      "button": 1
+    },
+    "expressions": 7,
+    "components": 4
+  },
+  "warnings": []
+}

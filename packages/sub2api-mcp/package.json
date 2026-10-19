@@ -1,0 +1,41 @@
+{
+  "name": "sub2api-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Sub2API — manage users, balances, upstream accounts, groups, API keys, usage. Works with any MCP-capable agent (DSH, Claude Desktop, Claude Code, Cursor, ...).",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "bin": {
+    "sub2api-mcp": "./src/cli.js"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./src/core/client.js",
+    "./server": "./src/mcp/server.js",
+    "./adapters": "./src/adapters/index.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "mcp.config.example.json"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "sub2api",
+    "ai-gateway",
+    "admin",
+    "agent"
+  ],
+  "scripts": {
+    "start": "node src/cli.js serve",
+    "test": "node test/smoke.mjs",
+    "register": "node src/cli.js register"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,25 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      sub2api-mcp:
+        specifier: file:../sub2api-mcp/sub2api-mcp-0.1.0.tgz
+        version: file:../sub2api-mcp/sub2api-mcp-0.1.0.tgz
+
+packages:
+
+  sub2api-mcp@file:../sub2api-mcp/sub2api-mcp-0.1.0.tgz:
+    resolution: {integrity: sha512-P4Jk2AvPsB93jR4cle6PoINnFQaWJjFA84S3uE7pXADvjyvo9/GUyKr0I8RH4Z4BeMhwFm4SzXHj4OA5EU7bRQ==, tarball: file:../sub2api-mcp/sub2api-mcp-0.1.0.tgz}
+    version: 0.1.0
+    engines: {node: '>=18.17'}
+    hasBin: true
+
+snapshots:
+
+  sub2api-mcp@file:../sub2api-mcp/sub2api-mcp-0.1.0.tgz: {}

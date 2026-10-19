@@ -1,0 +1,10 @@
+# dsh-plugin-sub2api 的装配声明
+# 写法参照工作区插件（dsh-git-push / dsh-plugin-doctor ✓）：
+#   · 第三方 bundle 必须用【顶层 insert】新建 loader 行 ✓
+#   · 无 insert 的 - id 是"覆盖已有行"✗ —— 基座没有这一行会报 patch target not found ✗
+- insert:
+    - id: dsh-plugin-sub2api
+      name: dsh-plugin-sub2api
+      config:
+        enabled: true
+        toolProfile: readonly

@@ -1,0 +1,61 @@
+{
+  "name": "dsh-plugin-sub2api",
+  "version": "0.1.0",
+  "description": "DSH plugin: Sub2API gateway in the settings sidebar (credentials + auto MCP registration). Broad DSH compatibility declared; real support self-checked at runtime.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "main": "./src/host/index.js",
+  "exports": {
+    ".": "./src/host/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-settings-plugins"
+      ],
+      "immediately": true
+    }
+  },
+  "files": [
+    "lib",
+    "src",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "doctor": "node src/host/doctor.js",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "sub2api-mcp": "^0.1.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": ">=0.1.0",
+    "@deepseek-ai/dsh-client-ui-settings": ">=0.1.0",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-ui-settings": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-ui-settings-plugins": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
