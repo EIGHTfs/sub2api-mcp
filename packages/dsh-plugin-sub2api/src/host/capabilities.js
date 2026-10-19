@@ -57,7 +57,8 @@ const CAPABILITIES = [
     id: 'configDir',
     label: 'DSH 配置目录可写',
     probe(ctx) {
-      const dir = (ctx && (ctx.home || (ctx.env && ctx.env.DSH_HOME))) || process.env.DSH_HOME;
+      // 只用环境变量（ctx.home 是 cordis 服务，未 inject 访问会抛 ✗）
+      const dir = (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME) || '';
       if (!dir) return null;
       return { via: 'DSH_HOME=' + dir, note: dir };
     },

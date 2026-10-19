@@ -10,11 +10,10 @@ import { httpRequest } from './http.js';
 export const CRED_FILE = 'sub2api-credentials.json';
 export const DEFAULT_URL = 'http://127.0.0.1:8080';
 
-export function dshHome(ctx) {
-  try {
-    const h = (ctx && (ctx.home || (ctx.env && ctx.env.DSH_HOME))) || process.env.DSH_HOME || '';
-    if (h) return String(h);
-  } catch { /* ignore */ }
+export function dshHome(_ctx) {
+  // 只用环境变量：ctx.home / ctx.env 是 cordis 服务，未 inject 就访问会抛
+  // "cannot get property \"home\" without inject" ✗（2026-10-19 实测，勿改回去）
+  if (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME) return process.env.DSH_HOME;
   return path.join(os.homedir(), '.dsh');
 }
 

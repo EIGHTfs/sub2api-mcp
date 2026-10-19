@@ -7,31 +7,56 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { createRequire } from 'node:module';
 
 const NAME = 'sub2api';
 
-export function dshHome(ctx) {
-  try {
-    const h = (ctx && (ctx.home || (ctx.env && ctx.env.DSH_HOME))) || process.env.DSH_HOME || '';
-    if (h) return String(h);
-  } catch { /* ignore */ }
+export function dshHome(_ctx) {
+  // 只用环境变量：ctx.home / ctx.env 是 cordis 服务，未 inject 就访问会抛
+  // "cannot get property \"home\" without inject" ✗（2026-10-19 实测，勿改回去）
+  if (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME) return process.env.DSH_HOME;
   return path.join(os.homedir(), '.dsh');
 }
 
-/** MCP 服务器入口（核心包；优先环境变量，其次常见位置 ✓） */
+/** 工具档位（存 <DSH_HOME>/sub2api-settings.json ✓ 与 index.js 共用同一份文件） */
+const PROFILES = ['readonly', 'readwrite', 'full'];
+export function readProfileSetting(ctx) {
+  try {
+    const f = path.join(dshHome(ctx), 'sub2api-settings.json');
+    const d = JSON.parse(fs.readFileSync(f, 'utf8'));
+    if (PROFILES.includes(d.toolProfile)) return d.toolProfile;
+  } catch { /* ignore */ }
+  return null;
+}
+
+/**
+ * MCP 服务器入口（核心包 ✓）—— 用 node 模块解析定位，避免写死路径 ✗：
+ *   ① env SUB2API_MCP_CLI（显式覆盖）
+ *   ② 依赖解析：sub2api-mcp 的入口 → 同目录 cli.js（npm 装插件时会带上依赖 ✓）
+ *   ③ 常见位置兜底
+ */
 export function resolveMcpCli() {
-  const cands = [
-    process.env.SUB2API_MCP_CLI,
+  const cands = [];
+  if (process.env.SUB2API_MCP_CLI) cands.push(process.env.SUB2API_MCP_CLI);
+  try {
+    const req = createRequire(import.meta.url);
+    const entry = req.resolve('sub2api-mcp');                 // .../node_modules/sub2api-mcp/src/index.js
+    cands.push(path.join(path.dirname(entry), 'cli.js'));
+    cands.push(path.join(path.dirname(path.dirname(entry)), 'src', 'cli.js'));
+  } catch { /* 依赖未装上 → 走兜底 */ }
+  cands.push(
     path.join(dshHome(null), 'sub2api-mcp', 'src', 'cli.js'),
     '/volume10/DeepSeekHarness/projects/sub2api-mcp/packages/sub2api-mcp/src/cli.js',
-  ].filter(Boolean);
-  for (const c of cands) { try { if (fs.existsSync(c)) return c; } catch { /* ignore */ } }
+    '/volume1/VirtualDSM/DeepSeekHarness/工作区/sub2api-mcp/packages/sub2api-mcp/src/cli.js',
+  );
+  for (const c of cands) { try { if (c && fs.existsSync(c)) return c; } catch { /* ignore */ } }
   return cands[0];
 }
 
-/** 生成 mcpServers 条目（含凭据 env ✓） */
+/** 生成 mcpServers 条目（含凭据 env ✓ 档位优先取已保存设置 ✓） */
 export function buildEntry(ctx, creds) {
-  const env = { MCP_TOOL_PROFILE: process.env.MCP_TOOL_PROFILE || 'readonly' };
+  // 档位来源优先级：显式 env > settings 文件里已保存的档位 > 只读兜底
+  const env = { MCP_TOOL_PROFILE: process.env.MCP_TOOL_PROFILE || readProfileSetting(ctx) || 'readonly' };
   if (creds && creds.email) {
     env.SUB2API_URL = creds.url || 'http://127.0.0.1:8080';
     env.SUB2API_EMAIL = creds.email;

@@ -18,7 +18,8 @@ import path from 'node:path';
 /** 落文件日志（start.sh 包装后 stdout 可能丢 ✗ → 诊断用这个 ✓） */
 function fileLog(ctx, msg) {
   try {
-    const home = (ctx && ctx.home) || process.env.DSH_HOME || '.';
+    // 只用环境变量（ctx.home 是 cordis 服务，未 inject 访问会抛 ✗）
+    const home = (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME) || '.';
     const line = new Date().toISOString() + ' ' + msg + '\n';
     const cands = [path.join(home, 'dsh-plugin-sub2api.log'), '/tmp/dsh-plugin-sub2api.log'];
     for (const f of cands) { try { fs.appendFileSync(f, line); return; } catch { /* 试下一个 */ } }
@@ -51,10 +52,20 @@ async function readBody(req, limit = 64 * 1024) {
 
 /** 工具档位（readonly | readwrite | full）—— 存 <DSH_HOME>/sub2api-settings.json ✓ */
 const PROFILES = ['readonly', 'readwrite', 'full'];
-function settingsPath(ctx) { return path.join((ctx && ctx.home) || process.env.DSH_HOME || '.', 'sub2api-settings.json'); }
+/**
+ * 安全解析 DSH_HOME：ctx.home 在不同 DSH 版本里可能是字符串、对象或不存在，
+ * 直接塞进 path.join 会抛 TypeError（线上 /profile 400 空 body 的根因），所以只认字符串。
+ */
+function safeHome(_ctx) {
+  // 只用环境变量：ctx.home / ctx.env 是 cordis 服务，未 inject 访问会抛
+  // "cannot get property \"home\" without inject" ✗（2026-10-19 实测，勿改回去）
+  if (typeof process.env.DSH_HOME === 'string' && process.env.DSH_HOME) return process.env.DSH_HOME;
+  return '.';
+}
+function settingsPath(ctx) { return path.join(safeHome(ctx), 'sub2api-settings.json'); }
 function readProfile(ctx) {
   try { const d = JSON.parse(fs.readFileSync(settingsPath(ctx), 'utf8')); if (PROFILES.includes(d.toolProfile)) return d.toolProfile; } catch { /* 回退 */ }
-  try { const e = JSON.parse(fs.readFileSync(path.join((ctx && ctx.home) || process.env.DSH_HOME || '.', 'mcp.json'), 'utf8')); const p = (((e.mcpServers || {}).sub2api || {}).env || {}).MCP_TOOL_PROFILE; if (PROFILES.includes(p)) return p; } catch { /* 回退 */ }
+  try { const e = JSON.parse(fs.readFileSync(path.join(safeHome(ctx), 'mcp.json'), 'utf8')); const p = (((e.mcpServers || {}).sub2api || {}).env || {}).MCP_TOOL_PROFILE; if (PROFILES.includes(p)) return p; } catch { /* 回退 */ }
   return 'readonly';
 }
 function writeProfile(ctx, p) {
@@ -100,7 +111,8 @@ export function apply(ctx) {
           const sub = url.slice(ROUTE_PREFIX.length).split('?')[0] || '/';
           if (req.method === 'GET' && (sub === '/status' || sub === '' || sub === '/')) {
             const creds = readCredentials(ctx);
-            if (!creds) return sendJson(res, 200, { configured: false, url: null, email: null });
+            // 未配置时也要回档位（否则前端滑块拿不到当前值 ✗）
+            if (!creds) return sendJson(res, 200, { configured: false, url: null, email: null, toolProfile: readProfile(ctx), profiles: PROFILES });
             let probe = { ok: false, error: '未探测' };
             try { probe = await probeGateway(creds); } catch (e) { probe = { ok: false, error: String((e && e.message) || e) }; }
             return sendJson(res, 200, { configured: true, url: creds.url, email: creds.email, passwordMasked: mask(creds.password), toolProfile: readProfile(ctx), profiles: PROFILES, probe });
@@ -118,18 +130,25 @@ export function apply(ctx) {
             return sendJson(res, 200, { ok: true, savedAt, mcpConfig: wrote && wrote.target, probe });
           }
           if (req.method === 'POST' && sub === '/profile') {
-            const body = await readBody(req);
-            const p = String((body && body.profile) || '');
-            if (!PROFILES.includes(p)) return sendJson(res, 400, { ok: false, error: '档位必须是 ' + PROFILES.join(' / ') });
-            writeProfile(ctx, p);
-            let wrote = null;
+            // 整个分支包 try/catch：任何异常都要回 JSON（否则前端收到空 body 会报
+            // "Failed to execute 'json' on 'Response'" ✗）
             try {
-              const creds = readCredentials(ctx);
-              const base = buildEntry(ctx, creds);
-              wrote = writeMcpConfig(ctx, { ...base, env: { ...base.env, MCP_TOOL_PROFILE: p } });
-            } catch (e) { /* 记录但不失败 */ }
-            log('[sub2api] 工具档位已切换: ' + p + ' | mcp.json: ' + (wrote && wrote.target ? '已更新' : '未更新'));
-            return sendJson(res, 200, { ok: true, profile: p, mcpConfig: wrote && wrote.target });
+              const body = await readBody(req);
+              const p = String((body && body.profile) || '');
+              if (!PROFILES.includes(p)) return sendJson(res, 400, { ok: false, error: '档位必须是 ' + PROFILES.join(' / ') });
+              const settingsFile = writeProfile(ctx, p);
+              let wrote = null;
+              try {
+                const creds = readCredentials(ctx);
+                const base = buildEntry(ctx, creds);
+                wrote = writeMcpConfig(ctx, { ...base, env: { ...base.env, MCP_TOOL_PROFILE: p } });
+              } catch (e) { /* 写 mcp.json 失败不影响档位落盘 */ }
+              log('[sub2api] 工具档位已切换: ' + p + ' | settings: ' + settingsFile + ' | mcp.json: ' + (wrote && wrote.target ? '已更新' : '未更新'));
+              return sendJson(res, 200, { ok: true, profile: p, settingsFile, mcpConfig: wrote && wrote.target });
+            } catch (e) {
+              log('[sub2api] 切换档位失败: ' + ((e && e.stack) || e));
+              return sendJson(res, 500, { ok: false, error: '切换档位失败: ' + ((e && e.message) || e) });
+            }
           }
           if (req.method === 'POST' && sub === '/logout') {
             let removed = false;
