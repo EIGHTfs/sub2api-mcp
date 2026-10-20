@@ -5,7 +5,7 @@
 
 - 纯 Node.js 标准库 ✓ **零运行时依赖** ✓ Node ≥ 18.17 ✓
 - 与 agent 无关 ✓（核心层 L0+L1 不依赖任何框架 ✓）
-- 工具权限**三档**：`readonly`（8）/ `readwrite`（17）/ `full`（18）✓
+- 工具权限**三档**：`readonly`（9）/ `readwrite`（20）/ `full`（21）✓
 - 自带**多 agent 注册器**：一条命令写入对应 agent 的 MCP 配置 ✓
 
 ## 安装 / 运行
@@ -72,12 +72,12 @@ sub2api-mcp inspect <agent>
 }
 ```
 
-## 工具（20 个，按档位）
+## 工具（21 个，按档位）
 
 | 档位 | 工具 |
 |---|---|
 | **readonly**（9） | `sub2api_status` `list_users` `get_user` `list_accounts` `list_groups` `list_api_keys` `get_usage` `sync_upstream_models` `probe_accounts` |
-| **readwrite**（+10） | `create_user` `update_user` `set_user_balance` `create_account` `update_account` `bind_account_group` `create_group` `create_api_key` `chat_completion` `import_dsh_providers` |
+| **readwrite**（+11） | `create_user` `update_user` `set_user_balance` `create_account` `update_account` `set_account_model_mapping` `bind_account_group` `create_group` `create_api_key` `chat_completion` `import_dsh_providers` |
 | **full**（+1） | `delete_account` |
 
 ## 从 DSH 导入模型提供商

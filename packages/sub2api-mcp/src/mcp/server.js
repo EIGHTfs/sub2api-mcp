@@ -44,12 +44,91 @@ export function toolDefs(client) {
     { name: 'list_accounts', tier: 'readonly', description: '列出上游账号',
       schema: { page: { type: 'integer' }, page_size: { type: 'integer' } },
       run: A(async (a) => { const r = await client.api('GET', '/api/v1/admin/accounts?' + qs({ page: a.page || 1, page_size: a.page_size || 50 })); return { http: r.status, data: (r.body && r.body.data) || r.body }; }) },
-    { name: 'create_account', tier: 'readwrite', description: '创建上游账号',
-      schema: { name: { type: 'string' }, platform: { type: 'string' }, type: { type: 'string' }, credentials: { type: 'object' } },
-      run: A(async (a) => { const r = await client.api('POST', '/api/v1/admin/accounts', { name: a.name, platform: a.platform || 'opencode_go', type: a.type || 'apikey', credentials: a.credentials || {} }); return { http: r.status, data: (r.body && r.body.data) || r.body }; }) },
-    { name: 'update_account', tier: 'readwrite', description: '更新上游账号',
-      schema: { account_id: { type: 'integer' }, name: { type: 'string' }, status: { type: 'string' }, schedulable: { type: 'boolean' }, priority: { type: 'integer' }, concurrency: { type: 'integer' }, credentials: { type: 'object' } },
-      run: A(async (a) => { const p = {}; ['name', 'status', 'schedulable', 'priority', 'concurrency', 'credentials'].forEach((k) => { if (a[k] !== undefined) p[k] = a[k]; }); const r = await client.api('PUT', '/api/v1/admin/accounts/' + Number(a.account_id), p); return { http: r.status, data: (r.body && r.body.data) || r.body }; }) },
+    // 字段与 Sub2API admin API 账号结构对齐 ✓（id=15 实测字段 ✓）：
+    // credentials = { api_key, base_url, api_base_urls{chat_completions/responses/anthropic}, account_mode, api_protocol, protocol_rules[], model_mapping{} }
+    // 顶层可设 = { priority, concurrency, schedulable, status, group_ids, auto_pause_on_expired }
+    // 直接参数（base_url/api_key 等）与整包 credentials 合并，单项覆盖整包同名键 ✓
+    { name: 'create_account', tier: 'readwrite', description: '创建上游账号（字段与 Sub2API 对齐：base_url/api_key/account_mode/api_protocol/api_base_urls/protocol_rules/model_mapping + priority/concurrency/schedulable/group_ids；也兼容整包 credentials）',
+      schema: {
+        name: { type: 'string' }, platform: { type: 'string' }, type: { type: 'string' },
+        base_url: { type: 'string', description: 'API 地址，如 http://10.10.10.64:8790/v1' },
+        api_key: { type: 'string', description: 'API Key' },
+        account_mode: { type: 'string', description: '如 payg' },
+        api_protocol: { type: 'string', description: 'adaptive / openai / anthropic / responses' },
+        api_base_urls: { type: 'object', description: '按协议分端点，如 {chat_completions, responses, anthropic}' },
+        protocol_rules: { type: 'array', description: '[{pattern, protocol}]，如 [{pattern:"claude-*",protocol:"anthropic"}]' },
+        model_mapping: { type: 'object', description: '对外模型名 → 上游真实模型名' },
+        credentials: { type: 'object', description: '整包传（兼容旧用法）；单项参数优先' },
+        priority: { type: 'integer' }, concurrency: { type: 'integer' }, schedulable: { type: 'boolean' },
+        status: { type: 'string' }, group_ids: { type: 'array' }, auto_pause_on_expired: { type: 'boolean' },
+      },
+      run: A(async (a) => {
+        const cred = { ...(a.credentials || {}) };
+        ['api_key', 'base_url', 'account_mode', 'api_protocol', 'api_base_urls', 'protocol_rules', 'model_mapping']
+          .forEach((k) => { if (a[k] !== undefined) cred[k] = a[k]; });
+        if (cred.base_url && !cred.api_base_urls) cred.api_base_urls = { chat_completions: cred.base_url };
+        const p = { name: a.name, platform: a.platform || 'openai', type: a.type || 'apikey', credentials: cred };
+        ['priority', 'concurrency', 'schedulable', 'status', 'group_ids', 'auto_pause_on_expired']
+          .forEach((k) => { if (a[k] !== undefined) p[k] = a[k]; });
+        if (p.concurrency === undefined) p.concurrency = 5; // 默认并发 5 ✓（0 会几乎不可用 ✗）
+        const r = await client.api('POST', '/api/v1/admin/accounts', p);
+        return { http: r.status, data: (r.body && r.body.data) || r.body };
+      }) },
+    // 更新走「读-合并-写」✓：部分更新 credentials 时先拉现有值合并 ✓，避免整包覆盖丢 api_key/base_url ✗
+    { name: 'update_account', tier: 'readwrite', description: '更新上游账号（credentials 为合并语义：只覆盖传入的键，其余保留 ✓）',
+      schema: {
+        account_id: { type: 'integer' }, name: { type: 'string' }, status: { type: 'string' },
+        schedulable: { type: 'boolean' }, priority: { type: 'integer' }, concurrency: { type: 'integer' },
+        group_ids: { type: 'array' }, auto_pause_on_expired: { type: 'boolean' },
+        base_url: { type: 'string' }, api_key: { type: 'string' }, account_mode: { type: 'string' },
+        api_protocol: { type: 'string' }, api_base_urls: { type: 'object' }, protocol_rules: { type: 'array' },
+        model_mapping: { type: 'object' }, credentials: { type: 'object' },
+      },
+      run: A(async (a) => {
+        const id = Number(a.account_id);
+        const p = {};
+        ['name', 'status', 'schedulable', 'priority', 'concurrency', 'group_ids', 'auto_pause_on_expired']
+          .forEach((k) => { if (a[k] !== undefined) p[k] = a[k]; });
+        const credPatch = {};
+        ['api_key', 'base_url', 'account_mode', 'api_protocol', 'api_base_urls', 'protocol_rules', 'model_mapping']
+          .forEach((k) => { if (a[k] !== undefined) credPatch[k] = a[k]; });
+        if (a.credentials && typeof a.credentials === 'object') Object.assign(credPatch, a.credentials);
+        if (Object.keys(credPatch).length) {
+          const cur = await client.api('GET', '/api/v1/admin/accounts/' + id);
+          const existing = (((cur.body || {}).data) || {}).credentials || {};
+          p.credentials = { ...existing, ...credPatch };
+        }
+        const r = await client.api('PUT', '/api/v1/admin/accounts/' + id, p);
+        return { http: r.status, data: (r.body && r.body.data) || r.body };
+      }) },
+    // 指定账号的模型映射 ✓：合并语义（保留现有其它映射），replace=true 才整表替换
+    { name: 'set_account_model_mapping', tier: 'readwrite', description: '设置指定账号的模型映射（对外名→上游真实名；默认合并保留现有条目，replace=true 整表替换）',
+      schema: {
+        account_id: { type: 'integer' },
+        mapping: { type: 'object', description: '如 {"DeepSeek-Flash":"deepseek-v4.1-flash"}；传 {} 配合 replace 可清空' },
+        replace: { type: 'boolean', description: '默认 false：合并入现有映射' },
+        base_url: { type: 'string', description: '可选：顺带更新 API 地址（同步改写 api_base_urls.chat_completions）' },
+        clear: { type: 'boolean', description: 'true=清空全部映射（等价 replace + mapping:{}）' },
+      },
+      run: A(async (a) => {
+        const id = Number(a.account_id);
+        const cur = await client.api('GET', '/api/v1/admin/accounts/' + id);
+        const acct = ((cur.body || {}).data) || {};
+        if (!acct.id) return { http: cur.status, error: '账号不存在 ✗' };
+        const cred = { ...(acct.credentials || {}) };
+        const old = { ...(cred.model_mapping || {}) };
+        const patch = (a.mapping && typeof a.mapping === 'object') ? a.mapping : {};
+        cred.model_mapping = a.clear || a.replace ? { ...patch } : { ...old, ...patch };
+        if (a.base_url) { cred.base_url = a.base_url; cred.api_base_urls = { ...(cred.api_base_urls || {}), chat_completions: a.base_url }; }
+        const r = await client.api('PUT', '/api/v1/admin/accounts/' + id, { credentials: cred });
+        const changed = [];
+        for (const [k, v] of Object.entries(patch)) if (old[k] !== v) changed.push(k + ': ' + (old[k] || '(无)') + ' → ' + v);
+        return {
+          http: r.status, account_id: id, name: acct.name,
+          before_count: Object.keys(old).length, after_count: Object.keys(cred.model_mapping).length,
+          changed, mapping: cred.model_mapping,
+        };
+      }) },
     { name: 'delete_account', tier: 'full', description: '删除上游账号（危险）',
       schema: { account_id: { type: 'integer' } },
       run: A(async (a) => { const r = await client.api('DELETE', '/api/v1/admin/accounts/' + Number(a.account_id)); return { http: r.status, data: (r.body && r.body.data) || r.body }; }) },
