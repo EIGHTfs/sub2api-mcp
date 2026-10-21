@@ -4,21 +4,14 @@
  * 目标：把 Sub2API 里已有的上游账号，反向写回 DSH 的提供商配置与凭据库，
  * 使 DSH 侧能直接用该上游（provider 名 + baseURL + 模型清单 + apiKeyEnv）。
  *
- * 写入的两处落点（结构由真实文件确认 ✓）：
- *   ① <DSH_HOME>/profiles/<profile>/cordis.patch.yml
- *        - id: llm-pi-ai
- *          config:
- *            providers:
- *              <providerId>:
- *                apiKeyEnv: <ENV>
- *                api: openai-completions
- *                baseURL: <账号 base_url>
- *                models:
- *                  - id: <模型名>
- *                    name: <模型名>
- *   ② <DSH_HOME>/.credentials.yaml
- *        refs:
- *          <ENV>: <api_key>
+ * 写入落点：由「内容指纹」自动发现，不绑定任何文件名 ✓
+ *   判据 = 文件内容里有没有对应结构段（跟名字无关）：
+ *     · 含 YAML `providers:` 段（JSON 的 "providers" 键）→ 配置文件，往里写 provider 块
+ *     · 含 YAML `refs:` 段（JSON 的 "refs" 键）          → 凭据文件，往里写 refs.<ENV>
+ *   多个候选时按修改时间取最新（陈旧备份天然靠后），并可用 patch_file / cred_file 显式覆盖。
+ *   为什么不能写死 ✗：不同版本/不同 profile/自定义布局下，承载 providers 与凭据的文件名完全不同
+ *   （cordis.patch.yml、cordis.yml、config.yaml、dsh.config.json、.credentials.yaml、credentials.json …），
+ *   写死名单必然在换版本时漏读/漏写。
  *
  * 为什么 key 常常导不出来 ✗
  *   Sub2API 的账号详情不回显明文 api_key（实测只给 credentials_status.has_api_key=true，
@@ -228,7 +221,7 @@ export function writeWithBackup(file, content, { mode } = {}) {
 /**
  * 主流程：读账号 → 组装 → （dry_run 只出计划）→ 写 patch 与凭据
  * @param {object} client  Sub2ApiClient
- * @param {object} opts    { accountId, provider, api, apiKeyEnv, apiKey, replace, dryRun, testModels, home }
+ * @param {object} opts    { accountId, provider, api, apiKeyEnv, apiKey, replace, dryRun, testModels, home, patchFile, credFile }
  */
 export async function exportAccountToDsh(client, opts = {}) {
   const accountId = Number(opts.accountId);
@@ -252,18 +245,22 @@ export async function exportAccountToDsh(client, opts = {}) {
   const testModels = Array.isArray(opts.testModels) && opts.testModels.length ? opts.testModels : DEFAULT_TEST_MODELS;
   const models = modelsOfAccount(account, testModels);
 
-  // ② 目标文件（复用导入侧的多来源发现 ✓ 避免绑定固定路径）
+  // ② 目标文件：走内容指纹发现（扫描含 providers: / refs: 段的文件）✓
+  //    不写死任何文件名 ✗ —— 换版本/自定义布局时目标文件叫什么名字都可能变
+  //    多个候选时的消歧策略（都可被 opts.patchFile / opts.credFile 显式覆盖）：
+  //      · 只看 YAML（写入侧只实现 YAML 结构）
+  //      · 按修改时间降序取最新 —— 活跃配置通常是最近被改动的那份，
+  //        历史备份/陈旧目录里的同名文件自然排在后面 ✓
   const home = dshHome(opts.home);
   const files = discoverFiles(home);
-  // patch 文件：优先已经含 providers 的那个
-  let patchFile = null;
-  for (const f of files.configs) {
-    try {
-      const t = fs.readFileSync(f, 'utf8');
-      if (/^\s*providers:\s*$/m.test(t)) { patchFile = f; break; }
-    } catch { /* 读不了就跳过 */ }
-  }
-  const credFile = files.credentials[0] || path.join(home, '.credentials.yaml');
+  const mtimeOf = (p) => { try { return fs.statSync(p).mtimeMs; } catch { return 0; } };
+  const byNewest = (a, b) => mtimeOf(b) - mtimeOf(a);
+  const yamlConfigs = files.configs.filter((f) => /\.ya?ml$/i.test(f)).sort(byNewest);
+  const yamlCreds = files.credentials.filter((f) => /\.ya?ml$/i.test(f)).sort(byNewest);
+  const patchFile = (opts.patchFile && fs.existsSync(opts.patchFile)) ? opts.patchFile : (yamlConfigs[0] || null);
+  const jsonOnlyConfigs = !patchFile && files.configs.length > 0 ? files.configs : [];
+  // 凭据文件同样按内容识别 + 取最新；识别不到就留空，由调用方拿到明确提示，绝不猜路径 ✗
+  const credFile = (opts.credFile && fs.existsSync(opts.credFile)) ? opts.credFile : (yamlCreds[0] || files.credentials[0] || '');
 
   // ③ key 取值优先级：调用方传入 > 账号详情里读到 > DSH 侧已有同名 ref 复用
   const keyFromParam = typeof opts.apiKey === 'string' && opts.apiKey.trim() ? opts.apiKey.trim() : '';
@@ -309,7 +306,7 @@ export async function exportAccountToDsh(client, opts = {}) {
     keySource: keyFromParam ? 'param' : (keyFromApi ? 'api' : (reuseExisting ? 'existing-ref' : 'none')),
     keyMasked: effectiveKey ? maskKey(effectiveKey) : (reuseExisting ? '(复用 DSH 现有 ref)' : ''),
     needsApiKey,
-    targets: { patchFile, credFile },
+    targets: { patchFile, credFile: credFile || null, discovered: { configs: files.configs, credentials: files.credentials } },
     patchAction: patchResult.action,
   };
 
@@ -322,7 +319,10 @@ export async function exportAccountToDsh(client, opts = {}) {
   // ⑤ 真写
   const writes = [];
   if (!patchFile) {
-    return { ...plan, error: '找不到含 providers 段的 DSH 配置文件，拒绝凭空新建（需先有 llm 插件配置）✗' };
+    const hint = jsonOnlyConfigs.length
+      ? '发现的配置是 JSON 布局（' + jsonOnlyConfigs.join(', ') + '），当前写入只支持 YAML ✗'
+      : '在 ' + home + ' 下没发现任何含 providers: 段的配置文件（请确认已配置 llm 插件）✗';
+    return { ...plan, error: hint };
   }
   if (patchResult.action === 'exists-refused') {
     return { ...plan, error: '同名 provider 已存在 ✗ 需显式 replace=true 才覆盖' };
@@ -331,12 +331,17 @@ export async function exportAccountToDsh(client, opts = {}) {
     const w = writeWithBackup(patchFile, patchResult.text);
     writes.push({ file: patchFile, action: patchResult.action, backup: w.backup });
   }
-  if (effectiveKey) {
+  if (effectiveKey && credFile) {
     const up = upsertRef(credText, apiKeyEnv, effectiveKey);
     const w = writeWithBackup(credFile, up.text, { mode: 0o600 });
     writes.push({ file: credFile, action: up.action, backup: w.backup });
   }
-  return { ...plan, writes, note: needsApiKey ? '未写入 key：参数未提供且 Sub2API 不回显 api_key，需自行补 ' + apiKeyEnv + ' 到凭据库 ✗' : undefined };
+  // 有 key 却没识别到凭据文件：不猜路径、不新建文件，明确回报 ✗
+  const noCredFile = !!effectiveKey && !credFile;
+  const noteParts = [];
+  if (needsApiKey) noteParts.push('未写入 key：参数未提供且 Sub2API 不回显 api_key，需自行补 ' + apiKeyEnv + ' 到凭据库 ✗');
+  if (noCredFile) noteParts.push('已在 ' + home + ' 下确认无任何含 refs: 段的凭据文件，key 未写入（可先用 DSH 自身保存一次凭据生成该文件）✗');
+  return { ...plan, writes, note: noteParts.join('；') || undefined };
 }
 
 export default {

@@ -100,14 +100,21 @@ node scripts/import-dsh-providers.mjs --write --api-protocol adaptive
 
 也可以在会话里让 AI 直接调 MCP 工具 `import_dsh_providers`（readwrite 档，默认 `dry_run: true`）。
 
-### 配置自动发现（不绑定具体文件）
+### 配置自动发现（按内容识别，不绑定文件名）
 
-不同 DSH 版本的配置落点不同，导入器按「扫描 → 合并 → 去重」处理，并报告每个提供商来自哪个文件：
+不同 DSH 版本/不同 profile/自定义布局下，承载配置与凭据的文件名完全不同。因此**不写死任何文件名**，
+而是递归扫描 `<DSH_HOME>`（深度 ≤ 3）下所有 `.yml/.yaml/.json`，按**内容结构**判定用途：
 
-| 类型 | 扫描位置 |
+| 判定 | 判据（只看内容，不看名字） |
 |---|---|
-| 提供商 | `<DSH_HOME>/` 与每个 `<DSH_HOME>/profiles/<name>/` 下的 `cordis.patch.yml` `cordis.yml` `config.{yml,yaml,json}` `dsh.config.json` |
-| 凭据 | `<DSH_HOME>/` 与每个 profile 下的 `.credentials.{yaml,yml,json}` `credentials.{json,yaml}` |
+| 配置文件 | 含 YAML `providers:` 段，或 JSON 的 `"providers"` 键 |
+| 凭据文件 | 含 YAML `refs:` 段，或 JSON 的 `"refs"` 键 |
+
+扫描边界：只收 `.yml/.yaml/.json`、单文件 ≤ 2MB、跳过 `node_modules`/`sessions`/`skills`/`cache`/`data`/
+`logs`/`tmp`/`dist`/`build`/`.trash`/`local-plugins` 等明显非配置目录（防止扫爆海量会话与插件数据）。
+
+多个候选时：**按修改时间取最新**（活跃配置通常是最近被改的那份，陈旧备份/历史目录天然靠后），
+导出工具还可用 `patch_file` / `cred_file` 参数显式指定。
 
 key 取值优先级：提供商内联 `apiKey` → 凭据库 `refs.<apiKeyEnv>` → 进程环境变量 `apiKeyEnv`。
 
@@ -176,12 +183,15 @@ export_account_to_dsh({
 })
 ```
 
-写入的两处落点：
+写入的两处落点（**都由内容指纹自动发现，不绑定文件名**）：
 
-| 目标 | 内容 |
-|---|---|
-| `<DSH_HOME>/profiles/<profile>/cordis.patch.yml` | `llm` 插件 `config.providers.<provider>`：`apiKeyEnv` / `api` / `baseURL` / `models[]` |
-| `<DSH_HOME>/.credentials.yaml` | `refs.<ENV>: <api_key>`（写后权限收敛 600） |
+| 目标 | 判据 | 内容 |
+|---|---|---|
+| 配置文件（含 `providers:` 段的 YAML） | 按内容结构识别 | `llm` 插件 `config.providers.<provider>`：`apiKeyEnv` / `api` / `baseURL` / `models[]` |
+| 凭据文件（含 `refs:` 段的 YAML） | 按内容结构识别 | `refs.<ENV>: <api_key>`（写后权限收敛 600） |
+
+多候选按修改时间取最新；可用 `patch_file` / `cred_file` 显式指定。识别不到目标文件时**明确报错**，
+绝不猜路径、不凭空新建。
 
 流程：读账号详情 → 取 `base_url`、`model_mapping` 的键（即 DSH 侧模型 id）、平台测试别名剔除 →
 定位含 `providers:` 段的 patch 文件（复用导入侧的多来源发现，不绑定固定路径）→ 生成 provider 块 →
@@ -213,6 +223,8 @@ Sub2API 的账号详情**不回显明文 api_key**（实测只给 `credentials_s
 | `replace` | `false` | 同名 provider 已存在时默认拒绝覆盖 |
 | `dry_run` | `true` | 只预览 |
 | `test_models` | `gpt-5.4` / `glm-5.3` / `claude-3-5-sonnet-20241022` | 从模型清单剔除的平台测试别名 |
+| `patch_file` | 自动发现 | 显式指定写入的配置文件（默认：含 `providers:` 段的 YAML，多候选取最新） |
+| `cred_file` | 自动发现 | 显式指定凭据文件（默认：含 `refs:` 段的 YAML） |
 
 ## 架构分层
 

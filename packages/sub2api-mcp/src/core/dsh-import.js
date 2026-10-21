@@ -122,26 +122,58 @@ export function parseCredentialRefs(text) {
   return refs;
 }
 
-/** 列出候选文件（各版本落点都扫 ✓ 不依赖单一文件） */
-export function discoverFiles(home) {
-  const cands = { configs: [], credentials: [] };
-  const addIfFile = (arr, p) => { try { if (fs.statSync(p).isFile()) arr.push(p); } catch { /* 不存在 */ } };
-  const CONFIG_NAMES = ['cordis.patch.yml', 'cordis.yml', 'cordis.patch.yaml', 'config.yml', 'config.yaml', 'config.json', 'dsh.config.json'];
-  const CRED_NAMES = ['.credentials.yaml', '.credentials.yml', '.credentials.json', 'credentials.json', 'credentials.yaml'];
-
-  // ① home 根
-  for (const n of CONFIG_NAMES) addIfFile(cands.configs, path.join(home, n));
-  for (const n of CRED_NAMES) addIfFile(cands.credentials, path.join(home, n));
-
-  // ② profiles/<name>/（每个 profile 都看 ✓）
-  let profiles = [];
-  try { profiles = fs.readdirSync(path.join(home, 'profiles')); } catch { profiles = []; }
-  for (const n of profiles) {
-    const dir = path.join(home, 'profiles', n);
-    for (const f of CONFIG_NAMES) addIfFile(cands.configs, path.join(dir, f));
-    for (const f of CRED_NAMES) addIfFile(cands.credentials, path.join(dir, f));
-  }
-  return cands;
+/**
+ * 发现 DSH 的配置文件与凭据文件 —— 按「内容指纹」判定，不写死任何文件名 ✓
+ *
+ * 为什么不能写死文件名 ✗：不同 DSH 版本、不同 profile、不同部署方式下，
+ *   承载 providers 的文件可能是 cordis.patch.yml / cordis.yml / config.yaml / dsh.config.json …
+ *   承载凭据的可能是 .credentials.yaml / credentials.json / …
+ *   一旦把名单写死，换版本或自定义布局就会漏读/漏写。
+ * 判据（只看内容，不看名字）：
+ *   · 含 YAML 的 `providers:` 段或 JSON 的 "providers" 键 → 配置文件候选
+ *   · 含 YAML 的 `refs:` 段或 JSON 的 "refs" 键            → 凭据文件候选
+ * 扫描边界（防扫爆 sessions/skills 等海量目录 ✓）：
+ *   · 深度上限 maxDepth（默认 3，覆盖 <home>/ 与 <home>/profiles/<name>/）
+ *   · 只收 .yml/.yaml/.json
+ *   · 单文件体积上限 maxBytes（默认 2MB）
+ *   · 跳过明显非配置的目录（依赖、版本库、会话日志、缓存、插件数据…）
+ */
+export function discoverFiles(home, opts = {}) {
+  const maxDepth = Number(opts.maxDepth || 3);
+  const maxBytes = Number(opts.maxBytes || 2 * 1024 * 1024);
+  // 噪声目录：这些目录下不会出现 DSH 的 provider/凭据配置，扫它们只会徒增耗时 ✓
+  const skipDirs = new Set(['node_modules', '.git', 'sessions', 'skills', 'cache', 'data', 'logs', 'log', 'tmp', 'dist', 'build', '.trash', 'local-plugins']);
+  const isCfgName = /\.(ya?ml|json)$/i;
+  const hasProvidersYaml = /^\s*providers:\s*$/m;
+  const hasProvidersJson = /"providers"\s*:/;
+  const hasRefsYaml = /^\s*refs:\s*$/m;
+  const hasRefsJson = /"refs"\s*:/;
+  const configs = [];
+  const credentials = [];
+  const walk = (dir, depth) => {
+    let entries = [];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    // 目录项按名字排序，保证多次运行结果稳定 ✓
+    entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const ent of entries) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        if (depth >= maxDepth || skipDirs.has(ent.name)) continue;
+        walk(full, depth + 1);
+        continue;
+      }
+      if (!ent.isFile() || !isCfgName.test(ent.name)) continue;
+      let text;
+      try {
+        if (fs.statSync(full).size > maxBytes) continue;
+        text = fs.readFileSync(full, 'utf8');
+      } catch { continue; }
+      if (hasProvidersYaml.test(text) || hasProvidersJson.test(text)) configs.push(full);
+      if (hasRefsYaml.test(text) || hasRefsJson.test(text)) credentials.push(full);
+    }
+  };
+  walk(home, 0);
+  return { configs, credentials };
 }
 
 /** api 协议 → Sub2API platform ✓ */

@@ -264,6 +264,9 @@ export function toolDefs(client) {
         replace: { type: 'boolean', description: '同名 provider 已存在时是否覆盖（默认 false：拒绝并报告）' },
         dry_run: { type: 'boolean', description: '默认 true：只返回将被写入的 provider 块，不落盘' },
         test_models: { type: 'array', description: '要从模型清单里剔除的平台测试模型名（默认 gpt-5.4/glm-5.3/claude-3-5-sonnet-20241022）' },
+        // 目标文件一律由内容指纹自动发现（含 providers: / refs: 段），这里只提供显式覆盖口子 ✓
+        patch_file: { type: 'string', description: '显式指定要写入的配置文件（默认自动发现：含 providers: 段的 YAML，多个候选取最新修改的）' },
+        cred_file: { type: 'string', description: '显式指定凭据文件（默认自动发现：含 refs: 段的 YAML）' },
       },
       run: A(async (a) => exportAccountToDsh(client, {
         accountId: a.account_id,
@@ -274,6 +277,8 @@ export function toolDefs(client) {
         replace: a.replace,
         dryRun: a.dry_run === undefined ? true : !!a.dry_run,
         testModels: a.test_models,
+        patchFile: a.patch_file,
+        credFile: a.cred_file,
       })) },
   ];
 }
