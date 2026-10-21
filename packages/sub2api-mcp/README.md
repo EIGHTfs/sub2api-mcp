@@ -93,6 +93,9 @@ node scripts/import-dsh-providers.mjs --write --probe
 
 # 3) 只导其中几个 / 已存在则覆盖更新
 node scripts/import-dsh-providers.mjs --write --update --only d,agnes
+
+# 4) 显式指定入站协议策略（默认 adaptive 自适应，一般不用改）
+node scripts/import-dsh-providers.mjs --write --api-protocol adaptive
 ```
 
 也可以在会话里让 AI 直接调 MCP 工具 `import_dsh_providers`（readwrite 档，默认 `dry_run: true`）。
@@ -122,10 +125,37 @@ Sub2API 的账号自检 `POST /admin/accounts/:id/test` **会忽略传入的 mod
 | 参数 | 默认 | 来源 |
 |---|---|---|
 | `concurrency`（账号并发上限） | **5** | 环境变量 `SUB2API_IMPORT_CONCURRENCY` → CLI `--concurrency` / MCP 参数 `concurrency` 覆盖 |
+| `api_protocol`（入站协议策略） | **`adaptive`** | `SUB2API_IMPORT_API_PROTOCOL` → CLI `--api-protocol` / MCP 参数 `api_protocol` 覆盖 |
 | `platform` | 按 provider 的 `api` 协议推导 | `openai-completions` → `openai`，`anthropic` → `anthropic` |
 | `model_mapping` | 该 provider 的全部模型（含测试模型别名） | 由 DSH 配置的 `models` 生成 |
 
 > 并发数低于 1 会被修正为 5 —— 设为 0 会让账号几乎不可用。
+
+### 入站协议策略（api_protocol）—— 默认必须自适应
+
+写进账号 `credentials.api_protocol`，决定上游按哪种协议语义解析请求体：
+
+| 取值 | 行为 |
+|---|---|
+| `adaptive`（**默认**） | 按入站协议优先使用供应商原生端点，只有缺对应端点时才转换 ✓ |
+| `openai` | 强制 OpenAI 语义。**部分上游会走 Responses**：请求体按 `input[] / ResponseInput` 反序列化 |
+| `anthropic` | 强制 Anthropic 语义 |
+| `responses` | 强制 Responses 语义 |
+
+为什么默认不能用 `openai`：客户端发的是 chat/completions 语义（`messages` + `role:"tool"` + `tool_calls`），
+而 Responses 语义要求 `{"type":"function_call"}` / `{"type":"function_call_output"}`，工具项没有对应 variant。
+长会话里前面纯文本消息能通过，一碰到工具结果 item 就整条请求 400：
+
+```
+Invalid JSON data: Failed to deserialize the JSON body into the target type:
+input: data did not match any variant of untagged enum ResponseInput at line 1 column 168435
+```
+
+`line 1 column 168435` 指单行 JSON 体第 ~164KB 处 —— 出错的是会话深处某一条工具相关 item，
+且这是不可重试的客户端契约错误（重试无效）。所以导入时把 `api_protocol` 显式写成 `adaptive`，
+让上游按入站协议挑端点，避免语义错配 ✓。
+
+> 该字段服务端无枚举校验（任意字符串都会落库），所以拼错不会报错、只会静默走错语义 —— 代码侧只接受非空字符串，默认 `adaptive`。
 
 ### 安全约束
 

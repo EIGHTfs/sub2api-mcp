@@ -9,7 +9,16 @@
  *   node scripts/import-dsh-providers.mjs --only d,agnes   # 只导指定 provider ✓
  *   node scripts/import-dsh-providers.mjs --probe          # 建完立刻探活 ✓
  *   node scripts/import-dsh-providers.mjs --concurrency 8 # 账号并发上限（默认取 env SUB2API_IMPORT_CONCURRENCY，缺省 5）
+ *   node scripts/import-dsh-providers.mjs --api-protocol adaptive  # 入站协议策略（默认 adaptive 自适应 ✓）
  *   node scripts/import-dsh-providers.mjs --test-model gpt-5.4   # 指定测试模型别名（默认 auto ✓）
+ *
+ * 关于「入站协议策略」：写进账号 credentials.api_protocol ✓
+ *   adaptive    按入站协议优先用供应商原生端点，只有缺对应端点时才转换（默认 ✓）
+ *   openai      强制按 OpenAI 语义（部分上游会走 Responses：input/ResponseInput ✗ 与 chat/completions 工具项不兼容）
+ *   anthropic   强制按 Anthropic 语义
+ *   responses   强制按 Responses 语义
+ * 不指定策略时上游按平台默认语义解析，openai 类平台会走 Responses —— 多轮对话中的工具结果/工具调用 item
+ * 在 ResponseInput 里无对应 variant，请求越长越可能在某条 item 上报 400 json_parse_error ✗，故默认改成自适应 ✓
  *
  * 关于「测试模型」：Sub2API 的账号自检固定用它的全局测试模型，且 /test 会忽略传入的 model ✗。
  * 所以导入时把该测试模型作为别名映射到账号的第一个真实模型 ✓，否则探活必然 model_not_found ✗。
@@ -77,7 +86,7 @@ if (testModel) {
 console.log('测试模型 : ' + testModel + ' ' + testModelNote);
 
 // ── 3) 读 DSH 侧提供商（多来源自动发现 ✓）
-const collected = collectDshProviders({ home: opt('--dsh-home', ''), testModel, concurrency: opt('--concurrency', '') });
+const collected = collectDshProviders({ home: opt('--dsh-home', ''), testModel, concurrency: opt('--concurrency', ''), apiProtocol: opt('--api-protocol', '') || undefined });
 console.log('DSH_HOME :', collected.home);
 console.log('配置文件（自动发现 ' + collected.files.configs.length + ' 个）:');
 for (const f of collected.files.configs) console.log('   - ' + f);
@@ -94,14 +103,15 @@ if (only.length) accounts = accounts.filter((a) => only.includes(a._meta.provide
 const loopRisk = (baseURL) => loopRiskOf(baseURL, cfg.sub2api.url);
 
 console.log('\n计划导入的账号（' + (write ? '真写模式 ✓' : 'dry-run ✓ 不会写任何东西') + '）:');
-console.log('  ' + 'provider'.padEnd(10) + '账号名'.padEnd(16) + 'platform'.padEnd(12) + 'baseURL'.padEnd(42) + '模型数'.padEnd(7) + 'key');
-console.log('  ' + '-'.repeat(104));
+console.log('  ' + 'provider'.padEnd(10) + '账号名'.padEnd(16) + 'platform'.padEnd(12) + 'api_protocol'.padEnd(14) + 'baseURL'.padEnd(42) + '模型数'.padEnd(7) + 'key');
+console.log('  ' + '-'.repeat(119));
 let loops = 0;
 for (const a of accounts) {
   const m = a._meta;
   const risk = loopRisk(m.baseURL);
   if (risk) loops++;
   console.log('  ' + String(m.providerId).padEnd(10) + String(a.name).padEnd(16) + String(a.platform).padEnd(12)
+    + String(m.apiProtocol || 'adaptive').padEnd(14)
     + String(m.baseURL).slice(0, 40).padEnd(42) + String(m.models.length).padEnd(7) + maskKey(a.credentials.api_key)
     + (risk ? '  ' + risk : ''));
 }

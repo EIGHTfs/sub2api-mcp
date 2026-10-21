@@ -182,11 +182,14 @@ export function toolDefs(client) {
         only: { type: 'string', description: '只处理指定 provider，逗号分隔，如 "d,agnes"' },
         test_model: { type: 'string', description: '账号自检的测试模型（默认按平台取：openai→gpt-5.4）' },
         concurrency: { type: 'integer', description: '账号并发上限（默认取 env SUB2API_IMPORT_CONCURRENCY，缺省 5）' },
+        // 入站协议策略：adaptive = 按入站协议优先用供应商原生端点，缺端点时才转换（默认 ✓）
+        // 不显式指定时上游按平台语义硬解析，openai 平台走 Responses，chat/completions 的工具项会导致 400 ✗
+        api_protocol: { type: 'string', description: '入站协议策略：adaptive（默认，自适应）| openai | anthropic | responses' },
         force: { type: 'boolean', description: '强制覆盖已存在的同名账号（不比对凭据）' },
       },
       run: A(async (a) => {
         const dry = a.dry_run === undefined ? true : !!a.dry_run;
-        const collected = collectDshProviders({ testModel: a.test_model || undefined, concurrency: a.concurrency });
+        const collected = collectDshProviders({ testModel: a.test_model || undefined, concurrency: a.concurrency, apiProtocol: a.api_protocol || undefined });
         const only = String(a.only || '').split(',').map((s) => s.trim()).filter(Boolean);
         let accounts = collected.accounts;
         if (only.length) accounts = accounts.filter((x) => only.includes(x._meta.providerId));
@@ -203,6 +206,7 @@ export function toolDefs(client) {
         const plan = accounts.map((x) => ({
           provider: x._meta.providerId, name: x.name, platform: x.platform,
           baseURL: x._meta.baseURL, models: x._meta.models.length,
+          apiProtocol: x._meta.apiProtocol, concurrency: x.concurrency,
           key: maskKey(x.credentials.api_key), source: x._meta.source,
         }));
         const base = { dryRun: dry, home: collected.home, configFiles: collected.files.configs.length, plan, loopSkipped, missing: collected.skipped };

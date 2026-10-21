@@ -153,11 +153,24 @@ export function platformOf(api) {
 }
 
 /** 汇总：扫描所有来源 → 合并 provider（同 id 取第一个有 baseURL 的 ✓）+ 合并 refs ✓ */
-export function collectDshProviders({ home, testModel = 'gpt-5.4', concurrency } = {}) {
+export function collectDshProviders({ home, testModel = 'gpt-5.4', concurrency, apiProtocol } = {}) {
   // 并发数：实参 > 环境变量 SUB2API_IMPORT_CONCURRENCY > 默认 5 ✓（0 会让账号几乎不可用 ✗）
   const conc = Number(concurrency !== undefined && concurrency !== null && concurrency !== ''
     ? concurrency
     : (process.env.SUB2API_IMPORT_CONCURRENCY || 5));
+  // 入站协议策略 —— 决定上游按哪种协议语义解析请求体 ✓
+  //   adaptive：按入站协议优先用供应商原生端点，只有缺对应端点时才转换（默认 ✓）
+  //   openai / anthropic / responses：强制单一语义
+  // 为什么默认 adaptive：强制 openai 平台时上游会按 Responses 语义（input/ResponseInput）解析，
+  // 而客户端发的是 chat/completions 语义（messages + role:"tool" + tool_calls），
+  // 工具项没有对应 variant，会话一长就在某个工具结果 item 上报 400 json_parse_error ✗
+  // 取值优先级：实参 > 环境变量 SUB2API_IMPORT_API_PROTOCOL > adaptive ✓
+  // （实测该字段无枚举校验，任意字符串都会落库 ✓，非法值不会报错但语义不明，故仅接受非空字符串）
+  const proto = String(
+    apiProtocol !== undefined && apiProtocol !== null && apiProtocol !== ''
+      ? apiProtocol
+      : (process.env.SUB2API_IMPORT_API_PROTOCOL || 'adaptive'),
+  ).trim() || 'adaptive';
   const concurrencyOf = (n) => { const v = Number(n); return Number.isFinite(v) && v > 0 ? Math.floor(v) : 5; };
   const h = dshHome(home);
   const files = discoverFiles(h);
@@ -205,10 +218,17 @@ export function collectDshProviders({ home, testModel = 'gpt-5.4', concurrency }
       name: 'dsh:' + p.id,
       platform: platformOf(p.api),
       type: 'apikey',
-      credentials: { api_key: key, base_url: p.baseURL, api_base_urls: { chat_completions: p.baseURL }, model_mapping: mapping },
+      credentials: {
+        api_key: key,
+        base_url: p.baseURL,
+        api_base_urls: { chat_completions: p.baseURL },
+        // 协议策略必须显式写入：不写时上游按平台默认语义解析，openai 类平台会走 Responses ✗
+        api_protocol: proto,
+        model_mapping: mapping,
+      },
       // 账号并发上限（Sub2API 字段名 = concurrency ✓）默认 5 ✓
       concurrency: concurrencyOf(conc),
-      _meta: { providerId: p.id, api: p.api, baseURL: p.baseURL, models, source: p.source, concurrency: concurrencyOf(conc) },
+      _meta: { providerId: p.id, api: p.api, baseURL: p.baseURL, models, source: p.source, concurrency: concurrencyOf(conc), apiProtocol: proto },
     });
   }
   return { home: h, files, providers, accounts, skipped };
