@@ -72,12 +72,12 @@ sub2api-mcp inspect <agent>
 }
 ```
 
-## 工具（21 个，按档位）
+## 工具（22 个，按档位）
 
 | 档位 | 工具 |
 |---|---|
 | **readonly**（9） | `sub2api_status` `list_users` `get_user` `list_accounts` `list_groups` `list_api_keys` `get_usage` `sync_upstream_models` `probe_accounts` |
-| **readwrite**（+11） | `create_user` `update_user` `set_user_balance` `create_account` `update_account` `set_account_model_mapping` `bind_account_group` `create_group` `create_api_key` `chat_completion` `import_dsh_providers` |
+| **readwrite**（+12） | `create_user` `update_user` `set_user_balance` `create_account` `update_account` `set_account_model_mapping` `bind_account_group` `create_group` `create_api_key` `chat_completion` `import_dsh_providers` `export_account_to_dsh` |
 | **full**（+1） | `delete_account` |
 
 ## 从 DSH 导入模型提供商
@@ -163,12 +163,64 @@ input: data did not match any variant of untagged enum ResponseInput at line 1 c
 - key 缺失的 provider 直接跳过并报告（不建空 key 账号）
 - 工具/CLI 输出里的 key 一律脱敏
 
+## 把账号导出回 DSH（反向）
+
+把 Sub2API 里已有的上游账号，反向写回 DSH 的提供商配置与凭据库，让 DSH 侧直接可用该上游。
+
+```text
+export_account_to_dsh({
+  account_id: 13,        // Sub2API 账号 id
+  provider: "agnes",     // DSH 侧 provider 名（默认取账号名并规范化）
+  api_key: "...",        // 自行指定的 API Key（写入凭据库；不传则尝试复用现有 ref）
+  dry_run: true          // 默认 true：只返回将被写入的块，不落盘
+})
+```
+
+写入的两处落点：
+
+| 目标 | 内容 |
+|---|---|
+| `<DSH_HOME>/profiles/<profile>/cordis.patch.yml` | `llm` 插件 `config.providers.<provider>`：`apiKeyEnv` / `api` / `baseURL` / `models[]` |
+| `<DSH_HOME>/.credentials.yaml` | `refs.<ENV>: <api_key>`（写后权限收敛 600） |
+
+流程：读账号详情 → 取 `base_url`、`model_mapping` 的键（即 DSH 侧模型 id）、平台测试别名剔除 →
+定位含 `providers:` 段的 patch 文件（复用导入侧的多来源发现，不绑定固定路径）→ 生成 provider 块 →
+`dry_run` 只预览，`dry_run:false` 才写；**写盘前自动备份 `<文件>.bak-<时间戳>`**。
+
+### key 的限制（重要）
+
+Sub2API 的账号详情**不回显明文 api_key**（实测只给 `credentials_status.has_api_key: true`；
+`/credentials`、`/key`、`/reveal`、`/api-key`、`/secret` 一律 404）。所以导出时：
+
+| 情况 | 行为 |
+|---|---|
+| 调用方直接传 `api_key` 参数 | 写入凭据库 `refs.<ENV>` ✓（**推荐做法**：key 由你自己填） |
+| 详情里能读到 `credentials.api_key` | 写入凭据库 `refs.<ENV>` ✓ |
+| 读不到，但 DSH 侧已有同名 `refs.<ENV>` | 复用现有 key，不覆盖 ✓ |
+| 都没有 | 只写 provider 配置，回报 `needsApiKey: true` + 需补的 ENV 名 ✗ |
+
+绝不写空串/占位符冒充 key —— 那会让 DSH 侧以为配好了，实际请求 401。
+
+### 参数
+
+| 参数 | 默认 | 说明 |
+|---|---|---|
+| `account_id` | 必填 | Sub2API 账号 id |
+| `provider` | 账号名规范化（去 `dsh:` 前缀） | DSH provider id |
+| `api` | 按 platform 推导 | `openai` → `openai-completions`，`anthropic` → `anthropic` |
+| `api_key_env` | `<PROVIDER>_API_KEY` | 凭据环境变量名 |
+| `api_key` | 无 | 直接指定 Key 写入凭据库（Sub2API 不回显 key，通常由你自行填写） |
+| `replace` | `false` | 同名 provider 已存在时默认拒绝覆盖 |
+| `dry_run` | `true` | 只预览 |
+| `test_models` | `gpt-5.4` / `glm-5.3` / `claude-3-5-sonnet-20241022` | 从模型清单剔除的平台测试别名 |
+
 ## 架构分层
 
 ```
 L0 src/core/client.js     Sub2API API 客户端（无 MCP/agent 依赖）
    src/core/probe.js      账号探活（SSE 解析）
    src/core/dsh-import.js DSH 提供商发现与转换（多来源扫描 ✓ 零依赖 ✓）
+   src/core/dsh-export.js Sub2API 账号反向导出到 DSH 配置（带备份 ✓ 凭据 600 ✓）
 L1 src/mcp/server.js      MCP 服务器（stdio JSON-RPC）
 L2 src/adapters/index.js  各 agent 注册器（claude-desktop / claude-code / cursor / dsh / generic）
    src/cli.js             命令行：serve / register / status / tools / config / adapters

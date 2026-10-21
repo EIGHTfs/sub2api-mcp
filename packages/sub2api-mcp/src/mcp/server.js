@@ -8,6 +8,7 @@ import readline from 'node:readline';
 import { Sub2ApiClient } from '../core/client.js';
 import { probeAccounts } from '../core/probe.js';
 import { collectDshProviders, maskKey, loopRiskOf } from '../core/dsh-import.js';
+import { exportAccountToDsh } from '../core/dsh-export.js';
 
 const PROTOCOL = '2024-11-05';
 
@@ -246,6 +247,34 @@ export function toolDefs(client) {
         };
         return { ...base, done, summary };
       }) },
+    // 反向导出：把 Sub2API 已有的上游账号写回 DSH 的提供商配置（providers 段）+ 凭据库 refs ✓
+    // 落点：<DSH_HOME>/profiles/<profile>/cordis.patch.yml 的 llm 插件 config.providers，
+    //       以及 <DSH_HOME>/.credentials.yaml 的 refs（写后收 600，写前先 .bak 备份 ✓）
+    // key 原则：Sub2API 详情不回显 api_key（只有 has_api_key ✓），所以读不到就只写 provider 配置，
+    //           回报 needsApiKey=true + 需补的 ENV 名；DSH 侧已有同名 ref 则复用不覆盖 ✓；绝不写占位符 ✗
+    { name: 'export_account_to_dsh', tier: 'readwrite', description: '把 Sub2API 账号导出成 DSH 提供商配置（默认 dry-run；写 patch 前自动 .bak 备份，key 读不到时明确回报 needsApiKey）',
+      schema: {
+        account_id: { type: 'integer', description: '要导出的 Sub2API 账号 id' },
+        provider: { type: 'string', description: 'DSH 侧 provider 名（默认取账号名，去掉 dsh: 前缀后规范化）' },
+        api: { type: 'string', description: 'DSH 的 api 协议名（默认按账号 platform 推导：openai→openai-completions，anthropic→anthropic）' },
+        api_key_env: { type: 'string', description: '凭据环境变量名（默认 <PROVIDER>_API_KEY）' },
+        // Sub2API 不回显 api_key（只有 has_api_key），所以允许调用方直接把 key 传进来写入凭据库 ✓
+        // 优先级：api_key 参数 > 账号详情里读到的 > DSH 侧已有同名 ref 复用
+        api_key: { type: 'string', description: '直接指定 API Key（写入凭据库 refs；不传则尝试复用 DSH 现有 ref，仍无则回报 needsApiKey）' },
+        replace: { type: 'boolean', description: '同名 provider 已存在时是否覆盖（默认 false：拒绝并报告）' },
+        dry_run: { type: 'boolean', description: '默认 true：只返回将被写入的 provider 块，不落盘' },
+        test_models: { type: 'array', description: '要从模型清单里剔除的平台测试模型名（默认 gpt-5.4/glm-5.3/claude-3-5-sonnet-20241022）' },
+      },
+      run: A(async (a) => exportAccountToDsh(client, {
+        accountId: a.account_id,
+        provider: a.provider,
+        api: a.api,
+        apiKeyEnv: a.api_key_env,
+        apiKey: a.api_key,
+        replace: a.replace,
+        dryRun: a.dry_run === undefined ? true : !!a.dry_run,
+        testModels: a.test_models,
+      })) },
   ];
 }
 
