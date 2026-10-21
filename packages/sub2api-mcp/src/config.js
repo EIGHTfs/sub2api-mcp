@@ -61,7 +61,7 @@ export function loadConfig(explicitPath) {
     },
     server: {
       name: env.MCP_SERVER_NAME || srv.name || 'sub2api',
-      version: srv.version || '0.1.0',
+      version: srv.version || '0.1.1',
       toolProfile: profile,
     },
     registry: data.registry || {},

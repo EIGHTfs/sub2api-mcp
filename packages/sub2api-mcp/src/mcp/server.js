@@ -305,7 +305,7 @@ export function startServer({ client, config, input = process.stdin, output = pr
       return send({ jsonrpc: '2.0', id, result: {
         protocolVersion: PROTOCOL,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: (config && config.server && config.server.name) || 'sub2api', version: (config && config.server && config.server.version) || '0.1.0' },
+        serverInfo: { name: (config && config.server && config.server.name) || 'sub2api', version: (config && config.server && config.server.version) || '0.1.1' },
       } });
     }
     if (method === 'notifications/initialized' || method === 'initialized') return;

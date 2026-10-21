@@ -242,6 +242,13 @@ L2 src/adapters/index.js  各 agent 注册器（claude-desktop / claude-code / c
 > **DSH 专用插件**（设置页 + 凭据托管 + 自动注册）在后续版本作为独立包
 > `dsh-plugin-sub2api` 提供，依赖本包 ✓ —— 本包本身与 DSH 无关 ✓
 
+## 版本记录
+
+| 版本 | 主要内容 |
+|---|---|
+| **0.1.1** | 新增 `export_account_to_dsh`（账号反向写回 DSH 配置，支持自行指定 key）；`create_account`/`update_account` 与账号 API 字段对齐；新增 `set_account_model_mapping`；导入显式写 `api_protocol`（默认 `adaptive`，修 OpenAI Responses 语义导致的 400）；配置与凭据文件改按内容指纹发现，去掉固定文件名清单 |
+| 0.1.0 | 首个发布：账号/用户/分组/API Key/用量/探活等 20 个工具 + 从 DSH 导入提供商 |
+
 ## 安全建议
 
 - 默认档位建议 `readonly` ✓（AI 只能看，不能改）
