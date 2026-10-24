@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 /** smoke.mjs — 冒烟测试：启动 MCP 服务器（stdio）并验证协议与只读工具 */
 import { spawn } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import readline from 'node:readline';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { toolVisibleCounts } from '../src/mcp/server.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(HERE, '..', 'src', 'cli.js');
+// 期望档位数从真源派生（禁止在测试里写死数字 ✗ 那是漂移起点）
+const EXPECT = toolVisibleCounts();
 const env = { ...process.env, MCP_CONFIG: path.join(HERE, '..', 'sub2api-mcp.config.json') };
 const proc = spawn(process.execPath, [CLI, 'serve'], { env, stdio: ['pipe', 'pipe', 'inherit'] });
 const rl = readline.createInterface({ input: proc.stdout, terminal: false });
@@ -43,7 +47,8 @@ await rpc('notifications/initialized', undefined, true);
 
 const tl = await rpc('tools/list', {});
 const names = (tl.result.tools || []).map((t) => t.name);
-check('tools/list（readonly 档 9 个）', names.length === 9, names.join(','));
+// 期望值从 server.js 的 toolVisibleCounts() 派生，不写死数字 ✗（写死就会随加工具再次漂移）
+check('tools/list（readonly 档）', names.length === EXPECT.readonly, names.join(','));
 check('readonly 不含写工具', !names.includes('create_user') && !names.includes('delete_account'));
 
 let r = await call('sub2api_status');
@@ -63,6 +68,20 @@ check('get_usage', JSON.parse(r.text).http === 200);
 
 const bad = await rpc('tools/call', { name: 'create_user', arguments: {} });
 check('禁用工具被拒（readonly 档 ✓）', !!bad.error && /unknown or disabled/.test(bad.error.message));
+
+// ── 文档漂移门禁（drift-prevention）───────────────────────────────────────
+// 为什么在冒烟里跑：工具数有四处表达（两份 README + 客户端 PROFILE_HINTS），
+// 只靠人记必然漏。这里调生成器的 check 逻辑，不一致就让冒烟红 ✗
+{
+  const { toolCounts, toolVisibleCounts } = await import('../src/mcp/server.js');
+  const own = toolCounts();
+  const vis = toolVisibleCounts();
+  const drift = spawnSync(process.execPath, [path.join(HERE, '..', 'scripts', 'gen-tool-counts.mjs'), 'check'], { encoding: 'utf8' });
+  check('工具数文档门禁（gen-tool-counts check）', drift.status === 0,
+    drift.status === 0 ? `readonly ${vis.readonly} / readwrite ${vis.readwrite} / full ${vis.full}` : String(drift.stdout || drift.stderr).slice(0, 200));
+  check('派生口径与 CLI 一致', names.length === vis.readonly, `smoke ${names.length} vs derived ${vis.readonly}`);
+  if (own.readonly + own.readwrite + own.full !== vis.full) check('累计口径自洽', false, JSON.stringify({ own, vis }));
+}
 
 proc.stdin.end();
 proc.kill();

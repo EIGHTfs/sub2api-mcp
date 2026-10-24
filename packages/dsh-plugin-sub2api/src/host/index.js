@@ -12,6 +12,10 @@
 import { detectCapabilities, summarize } from './capabilities.js';
 import { registerToDsh, unregisterFromDsh, writeMcpConfig, buildEntry } from './register.js';
 import { readCredentials, writeCredentials, probeGateway, credPath } from './credentials.js';
+// 档位常量从 profile.js 单一来源引入（不要在本文件里再写 'readonly' 字面量 ✗）
+// 再导出只为给外部一个稳定出口；register.js 直接 import ./profile.js，不经这里（避免循环引用 ✗）
+import { PROFILES, DEFAULT_TOOL_PROFILE, isProfile } from './profile.js';
+export { PROFILES, DEFAULT_TOOL_PROFILE, isProfile };
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -51,7 +55,7 @@ async function readBody(req, limit = 64 * 1024) {
 }
 
 /** 工具档位（readonly | readwrite | full）—— 存 <DSH_HOME>/sub2api-settings.json ✓ */
-const PROFILES = ['readonly', 'readwrite', 'full'];
+// PROFILES / DEFAULT_TOOL_PROFILE 现在从 ./profile.js 单一来源引入 ✓
 /**
  * 安全解析 DSH_HOME：ctx.home 在不同 DSH 版本里可能是字符串、对象或不存在，
  * 直接塞进 path.join 会抛 TypeError（线上 /profile 400 空 body 的根因），所以只认字符串。
@@ -66,7 +70,7 @@ function settingsPath(ctx) { return path.join(safeHome(ctx), 'sub2api-settings.j
 function readProfile(ctx) {
   try { const d = JSON.parse(fs.readFileSync(settingsPath(ctx), 'utf8')); if (PROFILES.includes(d.toolProfile)) return d.toolProfile; } catch { /* 回退 */ }
   try { const e = JSON.parse(fs.readFileSync(path.join(safeHome(ctx), 'mcp.json'), 'utf8')); const p = (((e.mcpServers || {}).sub2api || {}).env || {}).MCP_TOOL_PROFILE; if (PROFILES.includes(p)) return p; } catch { /* 回退 */ }
-  return 'readonly';
+  return DEFAULT_TOOL_PROFILE;
 }
 function writeProfile(ctx, p) {
   const f = settingsPath(ctx);

@@ -1,6 +1,6 @@
 window.__ModuleLoader__.load({
   id: 'dsh-plugin-sub2api',
-  factory: (require) => {
+  factory: (require) => { // dsh-skip-func-length
     var module = { exports: {} };
     var exports = module.exports;
 
@@ -11,7 +11,9 @@ window.__ModuleLoader__.load({
     const LS = 'dsh-plugin-sub2api:credentials';
     const PROFILES = ['readonly', 'readwrite', 'full'];
     const PROFILE_LABELS = ['只读', '读写', '全权'];
-    const PROFILE_HINTS = ['9 个工具 · 推荐', '18 个工具', '19 个工具 · 含删除'];
+// tool-counts:start
+    const PROFILE_HINTS = ['9 个工具 · 推荐', '21 个工具', '22 个工具 · 含删除'];
+// tool-counts:end
 
     // ── 样式（只注入一次 ✓ 参考 dsh-effort-slider 的设计 ✓）──
     const CSS = ''
@@ -57,8 +59,14 @@ window.__ModuleLoader__.load({
         const r = await fetchJson('/credentials', { method: 'POST', body: JSON.stringify(values) });
         return r && r.ok ? { ok: true, probe: r.probe } : { ok: false, reason: (r && r.error) || '保存失败' };
       } catch (e) {
-        try { window.localStorage.setItem(LS, JSON.stringify(values)); } catch (e2) { /* ignore */ }
-        return { ok: false, reason: '宿主路由不可用（' + ((e && e.message) || e) + '）' };
+        // 宿主路由不可用时**不落本地存储**：密码只能走宿主 /credentials（写 600 文件 ✓），
+        // 早期版本在这里 catch 里 setItem 整份 values（含 password）做"兜底回填"，
+        // 等于把凭据静默降级到浏览器 localStorage —— 与「密码只走 env / 600 文件」的承诺冲突 ✗
+        // 现在只把非敏感字段（url/email）留给表单回填，password 一律不回填、要求重填 ✓
+        try {
+          window.localStorage.setItem(LS, JSON.stringify({ url: values.url || '', email: values.email || '', password: '' }));
+        } catch (e2) { /* ignore */ }
+        return { ok: false, reason: '宿主路由不可用（' + ((e && e.message) || e) + '），密码未保存，请重试或在设置页重新打开' };
       }
     }
     async function loadStatus() {

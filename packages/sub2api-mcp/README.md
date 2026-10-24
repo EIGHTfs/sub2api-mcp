@@ -5,7 +5,15 @@
 
 - 纯 Node.js 标准库 ✓ **零运行时依赖** ✓ Node ≥ 18.17 ✓
 - 与 agent 无关 ✓（核心层 L0+L1 不依赖任何框架 ✓）
-- 工具权限**三档**：`readonly`（9）/ `readwrite`（20）/ `full`（21）✓
+<!-- tool-counts:start -->
+工具权限**三档**（累计可见口径，由 `toolCatalog()` 派生 ✓）：`readonly`（9）/ `readwrite`（21）/ `full`（22），共 22 个。
+
+| 档位 | 该档独有 | 累计可见 |
+|---|---|---|
+| **readonly** | 9 | 9 |
+| **readwrite** | 12 | 21 |
+| **full** | 1 | 22 |
+<!-- tool-counts:end -->
 - 自带**多 agent 注册器**：一条命令写入对应 agent 的 MCP 配置 ✓
 
 ## 安装 / 运行
@@ -246,6 +254,7 @@ L2 src/adapters/index.js  各 agent 注册器（claude-desktop / claude-code / c
 
 | 版本 | 主要内容 |
 |---|---|
+| **0.1.2** | 修文档漂移：工具数改由 `toolCatalog()` 单一真源派生 + `scripts/gen-tool-counts.mjs` 生成与门禁；默认档位收敛为 `readonly`（核心包 `DEFAULT_TOOL_PROFILE`，插件同源引用）；`exports` 补 `./config` 与 `./package.json`；冒烟新增文档门禁项 |
 | **0.1.1** | 新增 `export_account_to_dsh`（账号反向写回 DSH 配置，支持自行指定 key）；`create_account`/`update_account` 与账号 API 字段对齐；新增 `set_account_model_mapping`；导入显式写 `api_protocol`（默认 `adaptive`，修 OpenAI Responses 语义导致的 400）；配置与凭据文件改按内容指纹发现，去掉固定文件名清单 |
 | 0.1.0 | 首个发布：账号/用户/分组/API Key/用量/探活等 20 个工具 + 从 DSH 导入提供商 |
 

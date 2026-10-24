@@ -284,6 +284,47 @@ export function toolDefs(client) {
 }
 
 const TIER_ORDER = { readonly: 0, readwrite: 1, full: 2 };
+
+/** 档位顺序（对外暴露给 CLI / 文档生成器 / 门禁共用，避免各处再抄一份） */
+export { TIER_ORDER };
+
+/**
+ * 工具清单真源（单一真相 ✓）
+ *
+ * 为什么要有它：工具数曾被手抄在四个地方（两份 README、客户端 PROFILE_HINTS、口头描述），
+ * 加一个工具就必然漏改其中几处 ⇒ 文档数字全漂移。现在所有「有几个工具」的表述都从这里派生，
+ * 由 scripts/gen-tool-counts.mjs 生成进文档，禁止手抄。
+ *
+ * 注意：这里故意用 toolDefs(null) 派生而不是另写一份数组 —— 另写就等于又造一个真相源，
+ * 将来改工具表时两边会再次分叉 ✗
+ */
+export function toolCatalog() {
+  return toolDefs(null).map((t) => ({ name: t.name, tier: t.tier }));
+}
+
+/** 三档工具数（同样从真源派生，禁止手抄） */
+export function toolCounts() {
+  const out = { readonly: 0, readwrite: 0, full: 0 };
+  for (const t of toolCatalog()) out[t.tier] += 1;
+  return out;
+}
+
+/**
+ * 三档「可见工具数」（累计口径，与 allowedTools 完全一致 ✓）
+ *
+ * 为什么需要这个：档位是累加的 —— 设成 readwrite 时用户能看到 readonly+readwrite 两类工具，
+ * 所以 CLI 报的是 21 而不是「readwrite 档独有的 12 条」。文档里两种口径都会出现
+ * （表格列条目用独有口径，一句「共 N 个」用累计口径），必须都能派生，否则必然抄错 ✗
+ */
+export function toolVisibleCounts() {
+  const own = toolCounts();
+  return {
+    readonly: own.readonly,
+    readwrite: own.readonly + own.readwrite,
+    full: own.readonly + own.readwrite + own.full,
+  };
+}
+
 export function allowedTools(profile) {
   const max = TIER_ORDER[profile] ?? TIER_ORDER.readwrite;
   return toolDefs(null).filter((t) => TIER_ORDER[t.tier] <= max);
@@ -305,7 +346,7 @@ export function startServer({ client, config, input = process.stdin, output = pr
       return send({ jsonrpc: '2.0', id, result: {
         protocolVersion: PROTOCOL,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: (config && config.server && config.server.name) || 'sub2api', version: (config && config.server && config.server.version) || '0.1.1' },
+        serverInfo: { name: (config && config.server && config.server.name) || 'sub2api', version: (config && config.server && config.server.version) || '0.1.2' },
       } });
     }
     if (method === 'notifications/initialized' || method === 'initialized') return;

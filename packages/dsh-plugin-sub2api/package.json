@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-sub2api",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DSH plugin: Sub2API gateway in the settings sidebar — credentials, connection status, MCP tool-profile slider (readonly/readwrite/full), logout, and automatic MCP registration. Broad DSH compatibility declared; real support self-checked at runtime.",
   "type": "module",
   "license": "MIT",

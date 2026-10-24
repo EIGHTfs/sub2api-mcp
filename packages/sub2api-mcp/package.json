@@ -1,6 +1,6 @@
 {
   "name": "sub2api-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server for Sub2API — manage users, balances, upstream accounts, groups, API keys, usage and account probing. Works with any MCP-capable agent (DSH, Claude Desktop, Claude Code, Cursor, ...).",
   "type": "module",
   "license": "MIT",
@@ -27,8 +27,10 @@
   "exports": {
     ".": "./src/index.js",
     "./client": "./src/core/client.js",
+    "./config": "./src/config.js",
     "./server": "./src/mcp/server.js",
-    "./adapters": "./src/adapters/index.js"
+    "./adapters": "./src/adapters/index.js",
+    "./package.json": "./package.json"
   },
   "files": [
     "src",

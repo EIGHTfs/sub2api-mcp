@@ -36,12 +36,25 @@ export function readConfigFile(explicit) {
 
 const bool = (v, d) => (v === undefined ? d : !(v === '0' || v === 'false' || v === 'False'));
 
+/**
+ * 默认工具档位（单一真相 ✓）
+ *
+ * 为什么收敛到一处：这里曾默认 `readwrite`，而插件侧与文档都宣称 `readonly` ⇒
+ * 同一份 mcp.json 经 CLI 直接跑会拿到可写档，与「默认只读最安全」的承诺相反 ✗
+ * 现在核心包定义常量，插件包（packages/dsh-plugin-sub2api）import 它，
+ * 文档里的档位表述由 scripts/gen-tool-counts.mjs 从代码派生 ✓
+ *
+ * 为什么默认 readonly：MCP 是给 AI 用的，默认只读最安全（AI 只能看不能改）；
+ * 需要写权限的人显式设 readwrite / full。
+ */
+export const DEFAULT_TOOL_PROFILE = 'readonly';
+
 /** 三档工具权限：readonly | readwrite | full */
 export function resolveToolProfile(raw) {
   const v = String(raw || '').toLowerCase();
   if (['readonly', 'read', 'ro'].includes(v)) return 'readonly';
   if (['full', 'all', 'admin'].includes(v)) return 'full';
-  return 'readwrite';   // 默认
+  return 'readwrite';   // 未识别值的中性兜底（不是默认档位 ✗ 默认档位见 DEFAULT_TOOL_PROFILE）
 }
 
 export function loadConfig(explicitPath) {
@@ -49,7 +62,8 @@ export function loadConfig(explicitPath) {
   const s = data.sub2api || {};
   const srv = data.server || {};
   const env = process.env;
-  const profile = resolveToolProfile(env.MCP_TOOL_PROFILE || srv.toolProfile || 'readwrite');
+  // 默认档位取单一常量（env > 配置文件 > DEFAULT_TOOL_PROFILE ✓）
+  const profile = resolveToolProfile(env.MCP_TOOL_PROFILE || srv.toolProfile || DEFAULT_TOOL_PROFILE);
   return {
     configPath: cfgPath,
     sub2api: {
@@ -61,7 +75,7 @@ export function loadConfig(explicitPath) {
     },
     server: {
       name: env.MCP_SERVER_NAME || srv.name || 'sub2api',
-      version: srv.version || '0.1.1',
+      version: srv.version || '0.1.2',
       toolProfile: profile,
     },
     registry: data.registry || {},

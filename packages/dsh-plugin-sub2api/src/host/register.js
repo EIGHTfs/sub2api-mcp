@@ -8,6 +8,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { createRequire } from 'node:module';
+// 默认档位从 profile.js 单一来源引入（禁止再写 'readonly' 字面量 ✗ 会再次分叉；
+// 也不要 import index.js —— 那会构成循环引用 TDZ 风险 ✗）
+import { DEFAULT_TOOL_PROFILE } from './profile.js';
 
 const NAME = 'sub2api';
 
@@ -33,7 +36,9 @@ export function readProfileSetting(ctx) {
  * MCP 服务器入口（核心包 ✓）—— 用 node 模块解析定位，避免写死路径 ✗：
  *   ① env SUB2API_MCP_CLI（显式覆盖）
  *   ② 依赖解析：sub2api-mcp 的入口 → 同目录 cli.js（npm 装插件时会带上依赖 ✓）
- *   ③ 常见位置兜底
+ *   ③ <DSH_HOME>/sub2api-mcp 兜底
+ * ⚠️ 不要在这里加「某台机器的绝对路径」兜底：换机/换部署即失效，且会让人误以为
+ *    那条路径是权威位置（早期就是这么写的，结果指向一台已经不存在的机器 ✗）
  */
 export function resolveMcpCli() {
   const cands = [];
@@ -44,11 +49,8 @@ export function resolveMcpCli() {
     cands.push(path.join(path.dirname(entry), 'cli.js'));
     cands.push(path.join(path.dirname(path.dirname(entry)), 'src', 'cli.js'));
   } catch { /* 依赖未装上 → 走兜底 */ }
-  cands.push(
-    path.join(dshHome(null), 'sub2api-mcp', 'src', 'cli.js'),
-    '/volume10/DeepSeekHarness/projects/sub2api-mcp/packages/sub2api-mcp/src/cli.js',
-    '/volume1/VirtualDSM/DeepSeekHarness/工作区/sub2api-mcp/packages/sub2api-mcp/src/cli.js',
-  );
+  // 兜底只留「与本插件同机同 DSH_HOME」的相对推导 ✓
+  cands.push(path.join(dshHome(null), 'sub2api-mcp', 'src', 'cli.js'));
   for (const c of cands) { try { if (c && fs.existsSync(c)) return c; } catch { /* ignore */ } }
   return cands[0];
 }
@@ -56,7 +58,7 @@ export function resolveMcpCli() {
 /** 生成 mcpServers 条目（含凭据 env ✓ 档位优先取已保存设置 ✓） */
 export function buildEntry(ctx, creds) {
   // 档位来源优先级：显式 env > settings 文件里已保存的档位 > 只读兜底
-  const env = { MCP_TOOL_PROFILE: process.env.MCP_TOOL_PROFILE || readProfileSetting(ctx) || 'readonly' };
+  const env = { MCP_TOOL_PROFILE: process.env.MCP_TOOL_PROFILE || readProfileSetting(ctx) || DEFAULT_TOOL_PROFILE };
   if (creds && creds.email) {
     env.SUB2API_URL = creds.url || 'http://127.0.0.1:8080';
     env.SUB2API_EMAIL = creds.email;

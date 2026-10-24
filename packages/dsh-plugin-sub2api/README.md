@@ -19,8 +19,8 @@ DSH 插件：在**设置侧边栏**里填 Sub2API 网关地址 + 管理员账号
 | `src/host/index.js` 宿主入口 | ✅ 已完成（apply + 降级 + 生命周期清理 ✓） |
 | `src/host/register.js` MCP 注册适配 | ✅ 已完成（API → 配置文件 → 打印命令 三级降级 ✓） |
 | `src/host/doctor.js` 自检命令 | ✅ 已完成（`node src/host/doctor.js` ✓） |
-| `src/client/index.js` 设置页 | ⚠️ 源码级完成，**尚未在真实 DSH 里构建+联调** ✗ |
-| 构建（tsdown）+ 安装验证 | ⬜ 待做（需 DSH 重启周期 ✓） |
+| `src/host/profile.js` 档位常量 | ✅ 与核心包 `DEFAULT_TOOL_PROFILE` 同源（双通道 import ✓） |
+| `lib/client.js` 设置页 UI | ✅ 已装载联调（唯一客户端源；`src/client/` 死码已删除 ✓） |
 
 ## 命令
 
@@ -30,4 +30,14 @@ node src/host/doctor.js          # 能力自检报告（在 DSH 内外都能跑�
 
 ## 设计文档
 
-见 `../../../../docs/PLUGIN-DESIGN.md`（含分层、决策记录、兼容策略 ✓）
+见 [`docs/PLUGIN-DESIGN.md`](../../docs/PLUGIN-DESIGN.md)（含分层、决策记录、兼容策略 ✓）
+
+## 版本记录
+
+| 版本 | 主要内容 |
+|---|---|
+| **0.1.2** | 删除无构建链且无人引用的 `src/client/` 死码（`lib/client.js` 为唯一客户端源）；默认档位改从核心包 `DEFAULT_TOOL_PROFILE` 同源引用（新增 `src/host/profile.js`）；localStorage 不再回填密码；去掉两处失效的写死绝对路径 |
+| 0.1.1 | 修三个线上 bug：inject 限制、空响应、档位不回写 |
+| 0.1.0 | 首个发布：设置页 + 凭据托管 + 自动注册 + 能力自检三级降级 |
+
+> 发布顺序：先 `packages/sub2api-mcp`（核心），再本包；两包版本号保持同步。
